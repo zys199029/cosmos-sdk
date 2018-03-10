@@ -3,7 +3,6 @@ package lcd
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -250,19 +249,6 @@ func prepareClient(t *testing.T) {
 	header := abci.Header{Height: 1}
 	app.BeginBlock(abci.RequestBeginBlock{Header: header})
 	app.Commit()
-}
-
-// setupViper creates a homedir to run inside,
-// and returns a cleanup function to defer
-func setupViper() func() {
-	rootDir, err := ioutil.TempDir("", "mock-sdk-cmd")
-	if err != nil {
-		panic(err) // fuck it!
-	}
-	viper.Set("home", rootDir)
-	return func() {
-		os.RemoveAll(rootDir)
-	}
 }
 
 func initKeybase(t *testing.T) (cryptoKeys.Keybase, *dbm.GoLevelDB, error) {
