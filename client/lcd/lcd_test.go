@@ -31,8 +31,7 @@ import (
 )
 
 func TestKeys(t *testing.T) {
-	kb, db, err := initKeybase(t)
-	require.Nil(t, err, "Couldn't init Keybase")
+	prepareClient(t)
 
 	cdc := app.MakeCodec()
 	r := initRouter(cdc)
@@ -47,8 +46,9 @@ func TestKeys(t *testing.T) {
 	body := res.Body.String()
 	require.Equal(t, body, "[]", "Expected an empty array")
 
-	info, _, err := kb.Create("test", "1234567890", cryptoKeys.CryptoAlgo("ed25519"))
-	require.Nil(t, err, "Couldn't add key")
+	// add key
+	addr := createKey(t, r)
+	assert.Len(t, addr, 40, "Returned address has wrong format", res.Body.String())
 
 	// existing keys
 	req, err = http.NewRequest("GET", "/keys", nil)
@@ -62,7 +62,7 @@ func TestKeys(t *testing.T) {
 	err = decoder.Decode(&m)
 
 	assert.Equal(t, m[0].Name, "test", "Did not serve keys name correctly")
-	assert.Equal(t, m[0].Address, info.PubKey.Address().String(), "Did not serve keys Address correctly")
+	assert.Equal(t, m[0].Address, addr, "Did not serve keys Address correctly")
 
 	// select key
 	req, _ = http.NewRequest("GET", "/keys/test", nil)
@@ -75,7 +75,7 @@ func TestKeys(t *testing.T) {
 	err = decoder.Decode(&m2)
 
 	assert.Equal(t, m2.Name, "test", "Did not serve keys name correctly")
-	assert.Equal(t, m2.Address, info.PubKey.Address().String(), "Did not serve keys Address correctly")
+	assert.Equal(t, m2.Address, addr, "Did not serve keys Address correctly")
 
 	// update key
 	var jsonStr = []byte(`{"old_password":"1234567890", "new_password":"12345678901"}`)
@@ -102,8 +102,6 @@ func TestKeys(t *testing.T) {
 
 	r.ServeHTTP(res, req)
 	assert.Equal(t, http.StatusOK, res.Code, res.Body.String())
-
-	db.Close()
 }
 
 func TestVersion(t *testing.T) {
@@ -303,11 +301,15 @@ func runOrTimeout(cmd *cobra.Command, timeout time.Duration) error {
 	}
 }
 
-func initKeybase(t *testing.T) (cryptoKeys.Keybase, *dbm.GoLevelDB, error) {
-	os.RemoveAll("./testKeybase")
-	db, err := dbm.NewGoLevelDB("keys", "./testKeybase")
+func createKey(t *testing.T, r http.Handler) string {
+	var jsonStr = []byte(`{"name":"test", "password":"1234567890"}`)
+	req, err := http.NewRequest("POST", "/keys", bytes.NewBuffer(jsonStr))
 	require.Nil(t, err)
-	kb := client.GetKeyBase(db)
-	keys.SetKeyBase(kb)
-	return kb, db, nil
+	res := httptest.NewRecorder()
+
+	r.ServeHTTP(res, req)
+	assert.Equal(t, http.StatusOK, res.Code, res.Body.String())
+
+	addr := res.Body.String()
+	return addr
 }
