@@ -3,16 +3,12 @@ package lcd
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"regexp"
 	"testing"
-	"time"
 
-	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
 	"github.com/cosmos/cosmos-sdk/baseapp"
@@ -24,12 +20,19 @@ import (
 	"github.com/cosmos/cosmos-sdk/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
 	abci "github.com/tendermint/abci/types"
 	cryptoKeys "github.com/tendermint/go-crypto/keys"
 	"github.com/tendermint/tendermint/p2p"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	dbm "github.com/tendermint/tmlibs/db"
 	"github.com/tendermint/tmlibs/log"
+
+	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/client"
+	keys "github.com/cosmos/cosmos-sdk/client/keys"
+	"github.com/cosmos/cosmos-sdk/examples/basecoin/app"
+	"github.com/cosmos/cosmos-sdk/server"
 )
 
 func TestKeys(t *testing.T) {
@@ -114,18 +117,17 @@ func TestVersion(t *testing.T) {
 	res := request(t, r, "GET", "/version", nil)
 	require.Equal(t, http.StatusOK, res.Code, res.Body.String())
 
-	// TODO fix regexp
-	// reg, err := regexp.Compile(`v\d+\.\d+\.\d+(-dev)?`)
-	// require.Nil(t, err)
-	// match := reg.MatchString(res.Body.String())
-	// assert.True(t, match, res.Body.String())
-	assert.Equal(t, "0.11.1-dev", res.Body.String())
+	reg, err := regexp.Compile(`\d+\.\d+\.\d+(-dev)?`)
+	require.Nil(t, err)
+	match := reg.MatchString(res.Body.String())
+	assert.True(t, match, res.Body.String())
 }
 
 func TestNodeStatus(t *testing.T) {
-	_, _ = startServer(t)
-	// TODO need to kill server after
+	ch := server.StartServer(t)
+	defer close(ch)
 	prepareClient(t)
+
 	cdc := app.MakeCodec()
 	r := initRouter(cdc)
 
@@ -138,7 +140,7 @@ func TestNodeStatus(t *testing.T) {
 	err := decoder.Decode(&m)
 	require.Nil(t, err, "Couldn't parse node info")
 
-	assert.NotEqual(t, p2p.NodeInfo{}, m)
+	assert.NotEqual(t, p2p.NodeInfo{}, m, "res: %v", res)
 
 	// syncing
 	res = request(t, r, "GET", "/syncing", nil)
@@ -148,9 +150,10 @@ func TestNodeStatus(t *testing.T) {
 }
 
 func TestBlock(t *testing.T) {
-	_, _ = startServer(t)
-	// TODO need to kill server after
+	ch := server.StartServer(t)
+	defer close(ch)
 	prepareClient(t)
+
 	cdc := app.MakeCodec()
 	r := initRouter(cdc)
 
@@ -178,8 +181,9 @@ func TestBlock(t *testing.T) {
 }
 
 func TestValidators(t *testing.T) {
-	_, _ = startServer(t)
-	// TODO need to kill server after
+	ch := server.StartServer(t)
+	defer close(ch)
+
 	prepareClient(t)
 	cdc := app.MakeCodec()
 	r := initRouter(cdc)
@@ -285,78 +289,6 @@ func prepareClient(t *testing.T) {
 	header := abci.Header{Height: 1}
 	app.BeginBlock(abci.RequestBeginBlock{Header: header})
 	app.Commit()
-}
-
-// setupViper creates a homedir to run inside,
-// and returns a cleanup function to defer
-func setupViper() func() {
-	rootDir, err := ioutil.TempDir("", "mock-sdk-cmd")
-	if err != nil {
-		panic(err) // fuck it!
-	}
-	viper.Set("home", rootDir)
-	return func() {
-		os.RemoveAll(rootDir)
-	}
-}
-
-// from baseoind.main
-func defaultOptions(addr string) func(args []string) (json.RawMessage, error) {
-	return func(args []string) (json.RawMessage, error) {
-		opts := fmt.Sprintf(`{
-      "accounts": [{
-        "address": "%s",
-        "coins": [
-          {
-            "denom": "mycoin",
-            "amount": 9007199254740992
-          }
-        ]
-      }]
-    }`, addr)
-		return json.RawMessage(opts), nil
-	}
-}
-
-func startServer(t *testing.T) (types.Address, string) {
-	defer setupViper()()
-	// init server
-	addr, secret, err := server.GenerateCoinKey()
-	require.NoError(t, err)
-	initCmd := server.InitCmd(defaultOptions(addr.String()), log.NewNopLogger())
-	err = initCmd.RunE(nil, nil)
-	require.NoError(t, err)
-
-	// start server
-	viper.Set("with-tendermint", true)
-	startCmd := server.StartCmd(mock.NewApp, log.NewNopLogger())
-	timeout := time.Duration(3) * time.Second
-
-	err = runOrTimeout(startCmd, timeout)
-	require.NoError(t, err)
-
-	return addr, secret
-}
-
-// copied from server/start_test.go
-func runOrTimeout(cmd *cobra.Command, timeout time.Duration) error {
-	done := make(chan error)
-	go func(out chan<- error) {
-		// this should NOT exit
-		err := cmd.RunE(nil, nil)
-		if err != nil {
-			out <- err
-		}
-		out <- fmt.Errorf("start died for unknown reasons")
-	}(done)
-	timer := time.NewTimer(timeout)
-
-	select {
-	case err := <-done:
-		return err
-	case <-timer.C:
-		return nil
-	}
 }
 
 func request(t *testing.T, r http.Handler, method string, path string, payload []byte) *httptest.ResponseRecorder {
