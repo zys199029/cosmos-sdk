@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/cosmos/cosmos-sdk/client/builder"
+
 	"github.com/gorilla/mux"
 
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/keys"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
@@ -68,8 +69,9 @@ func SendRequestHandler(cdc *wire.Codec) func(http.ResponseWriter, *http.Request
 			return
 		}
 
+		// not using builder.SignBuildBroadcast to differentiate the errors
 		// sign
-		txBytes, err := c.SignMessage(msg, kb, m.LocalAccountName, m.Password)
+		txBytes, err := builder.SignAndBuild(msg, c.Cdc)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(err.Error()))
@@ -77,7 +79,7 @@ func SendRequestHandler(cdc *wire.Codec) func(http.ResponseWriter, *http.Request
 		}
 
 		// send
-		res, err := client.BroadcastTx(txBytes)
+		res, err := builder.BroadcastTx(txBytes)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))

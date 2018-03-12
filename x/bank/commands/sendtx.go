@@ -9,18 +9,15 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/keys"
+	"github.com/cosmos/cosmos-sdk/client/builder"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
 	"github.com/cosmos/cosmos-sdk/x/bank"
-	cryptokeys "github.com/tendermint/go-crypto/keys"
 )
 
 const (
-	flagTo       = "to"
-	flagAmount   = "amount"
-	flagFee      = "fee"
-	flagSequence = "seq"
+	flagTo     = "to"
+	flagAmount = "amount"
 )
 
 // SendTxCommand will create a send tx and sign it with the given key
@@ -33,8 +30,6 @@ func SendTxCmd(Cdc *wire.Codec) *cobra.Command {
 	}
 	cmd.Flags().String(flagTo, "", "Address to send coins")
 	cmd.Flags().String(flagAmount, "", "Amount of coins to send")
-	cmd.Flags().String(flagFee, "", "Fee to pay along with transaction")
-	cmd.Flags().Int64(flagSequence, 0, "Sequence number to sign the tx")
 	return cmd
 }
 
@@ -58,41 +53,21 @@ func (c Commander) sendTxCmd(cmd *cobra.Command, args []string) error {
 	}
 	to := sdk.Address(bz)
 
-	kb, err := keys.GetKeyBase()
-	if err != nil {
-		return err
-	}
-
-	// parse and get sender address
+	// get the from address
 	name := viper.GetString(client.FlagName)
-	info, err := kb.Get(name)
-	if err != nil {
-		return errors.Errorf("No key for: %s", name)
+	if name == "" {
+		return errors.Errorf("must provide a name using --name")
 	}
-	from := info.PubKey.Address()
-
-	// request passphrase
-	buf := client.BufferStdin()
-	prompt := fmt.Sprintf("Password to sign with '%s':", name)
-	passphrase, err := client.GetPassword(prompt, buf)
+	from, err := builder.GetFromAddress(name)
 	if err != nil {
 		return err
 	}
 
 	// build message
 	msg := BuildMsg(from, to, coins)
-	if err != nil {
-		return err
-	}
 
-	// sing message
-	txBytes, err := c.SignMessage(msg, kb, name, passphrase)
-	if err != nil {
-		return err
-	}
-
-	// send message
-	res, err := client.BroadcastTx(txBytes)
+	// build and sign the transaction, then broadcast to Tendermint
+	res, err := builder.SignBuildBroadcast(msg, c.Cdc)
 	if err != nil {
 		return err
 	}
@@ -106,27 +81,4 @@ func BuildMsg(from sdk.Address, to sdk.Address, coins sdk.Coins) sdk.Msg {
 	output := bank.NewOutput(to, coins)
 	msg := bank.NewSendMsg([]bank.Input{input}, []bank.Output{output})
 	return msg
-}
-
-func (c Commander) SignMessage(msg sdk.Msg, kb cryptokeys.Keybase, accountName string, password string) ([]byte, error) {
-	// sign and build
-	bz := msg.GetSignBytes()
-	sig, pubkey, err := kb.Sign(accountName, password, bz)
-	if err != nil {
-		return nil, err
-	}
-	sigs := []sdk.StdSignature{{
-		PubKey:    pubkey,
-		Signature: sig,
-		Sequence:  viper.GetInt64(flagSequence),
-	}}
-
-	// marshal bytes
-	tx := sdk.NewStdTx(msg, sigs)
-
-	txBytes, err := c.Cdc.MarshalBinary(tx)
-	if err != nil {
-		return nil, err
-	}
-	return txBytes, nil
 }
