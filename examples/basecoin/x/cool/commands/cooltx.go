@@ -38,8 +38,16 @@ func WhatCoolTxCmd(cdc *wire.Codec) *cobra.Command {
 			// create the message
 			msg := cool.NewWhatCoolMsg(from, args[0])
 
+			// get password
+			buf := client.BufferStdin()
+			prompt := fmt.Sprintf("Password to sign with '%s':", name)
+			passphrase, err := client.GetPassword(prompt, buf)
+			if err != nil {
+				return err
+			}
+
 			// build and sign the transaction, then broadcast to Tendermint
-			res, err := builder.SignBuildBroadcast(msg, cdc)
+			res, err := builder.SignBuildBroadcast(name, passphrase, msg, cdc)
 			if err != nil {
 				return err
 			}
@@ -71,11 +79,19 @@ func SetWhatCoolTxCmd(cdc *wire.Codec) *cobra.Command {
 				return err
 			}
 
+			// get password
+			buf := client.BufferStdin()
+			prompt := fmt.Sprintf("Password to sign with '%s':", name)
+			passphrase, err := client.GetPassword(prompt, buf)
+			if err != nil {
+				return err
+			}
+
 			// create the message
 			msg := cool.NewSetWhatCoolMsg(from, args[0])
 
 			// build and sign the transaction, then broadcast to Tendermint
-			res, err := builder.SignBuildBroadcast(msg, cdc)
+			res, err := builder.SignBuildBroadcast(name, passphrase, msg, cdc)
 			if err != nil {
 				return err
 			}

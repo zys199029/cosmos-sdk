@@ -3,6 +3,7 @@ package rest
 import (
 	"encoding/hex"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/cosmos/cosmos-sdk/client/builder"
@@ -18,9 +19,9 @@ import (
 type SendBody struct {
 	// fees is not used currently
 	// Fees             sdk.Coin  `json="fees"`
-	Amount           sdk.Coins `json="amount"`
-	LocalAccountName string    `json="account"`
-	Password         string    `json="password"`
+	Amount           sdk.Coins `json:"amount"`
+	LocalAccountName string    `json:"name"`
+	Password         string    `json:"password"`
 }
 
 func SendRequestHandler(cdc *wire.Codec) func(http.ResponseWriter, *http.Request) {
@@ -31,8 +32,13 @@ func SendRequestHandler(cdc *wire.Codec) func(http.ResponseWriter, *http.Request
 		address := vars["address"]
 
 		var m SendBody
-		decoder := json.NewDecoder(r.Body)
-		err := decoder.Decode(&m)
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte(err.Error()))
+			return
+		}
+		err = json.Unmarshal(body, &m)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			w.Write([]byte(err.Error()))
@@ -62,7 +68,7 @@ func SendRequestHandler(cdc *wire.Codec) func(http.ResponseWriter, *http.Request
 		to := sdk.Address(bz)
 
 		// build
-		msg := commands.BuildMsg(info.Address(), to, m.Amount)
+		msg := commands.BuildMsg(info.PubKey.Address(), to, m.Amount)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(err.Error()))
@@ -71,7 +77,7 @@ func SendRequestHandler(cdc *wire.Codec) func(http.ResponseWriter, *http.Request
 
 		// not using builder.SignBuildBroadcast to differentiate the errors
 		// sign
-		txBytes, err := builder.SignAndBuild(msg, c.Cdc)
+		txBytes, err := builder.SignAndBuild(m.LocalAccountName, m.Password, msg, c.Cdc)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			w.Write([]byte(err.Error()))
