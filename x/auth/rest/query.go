@@ -24,6 +24,9 @@ func QueryAccountRequestHandler(storeName string, cdc *wire.Codec, parser sdk.Pa
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		addr := vars["address"]
+
+		fmt.Println("ADDR", addr)
+
 		bz, err := hex.DecodeString(addr)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
@@ -32,15 +35,18 @@ func QueryAccountRequestHandler(storeName string, cdc *wire.Codec, parser sdk.Pa
 		}
 		key := sdk.Address(bz)
 
+		fmt.Println("KEY", key)
+
 		res, err := builder.Query(key, c.storeName)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(fmt.Sprintf("Could't query account. Error: %s", err.Error())))
 			return
 		}
+		fmt.Println("RES", res)
 
 		// the query will return empty if there is no data for this account
-		if res == nil {
+		if len(res) == 0 {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
