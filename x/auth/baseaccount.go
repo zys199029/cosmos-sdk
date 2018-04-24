@@ -18,16 +18,15 @@ var _ sdk.Account = (*BaseAccount)(nil)
 // Extend this by embedding this in your AppAccount.
 // See the examples/basecoin/types/account.go for an example.
 type BaseAccount struct {
-	Address  sdk.Address   `json:"address"`
-	Coins    sdk.Coins     `json:"coins"`
-	PubKey   crypto.PubKey `json:"public_key"`
-	Sequence int64         `json:"sequence"`
+	Address       sdk.Address   `json:"address"`
+	Coins         sdk.Coins     `json:"coins"`
+	PubKey        crypto.PubKey `json:"public_key"`
+	AccountNumber int64         `json:"acc_sequence"`
+	Sequence      int64         `json:"tx_sequence"`
 }
 
-func NewBaseAccountWithAddress(addr sdk.Address) BaseAccount {
-	return BaseAccount{
-		Address: addr,
-	}
+func BaseAccountConstructor() sdk.Account {
+	return BaseAccount{}
 }
 
 // Implements sdk.Account.
@@ -79,12 +78,12 @@ func (acc *BaseAccount) SetCoins(coins sdk.Coins) error {
 	return nil
 }
 
-// Implements sdk.Account.
+// Implements sdk.Account
 func (acc *BaseAccount) GetSequence() int64 {
 	return acc.Sequence
 }
 
-// Implements sdk.Account.
+// Implements sdk.Account
 func (acc *BaseAccount) SetSequence(seq int64) error {
 	acc.Sequence = seq
 	return nil

@@ -1,15 +1,15 @@
 package auth
 
 import (
-	"fmt"
-	"reflect"
-
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	wire "github.com/cosmos/cosmos-sdk/wire"
 )
 
 var _ sdk.AccountMapper = (*accountMapper)(nil)
 var _ sdk.AccountMapper = (*sealedAccountMapper)(nil)
+
+// AccountConstructor returns an empty sdk.Account concrete type
+type AccountConstructor = func() sdk.Account
 
 // Implements sdk.AccountMapper.
 // This AccountMapper encodes/decodes accounts using the
@@ -19,21 +19,26 @@ type accountMapper struct {
 	// The (unexposed) key used to access the store from the Context.
 	key sdk.StoreKey
 
-	// The prototypical sdk.Account concrete type.
-	proto sdk.Account
+	// Constructor for the sdk.Account concrete type.
+	accConstructor AccountConstructor
 
 	// The wire codec for binary encoding/decoding of accounts.
 	cdc *wire.Codec
+
+	// The key under which the next Account Number will be stored
+	nextAccNumKey []byte
 }
 
 // NewAccountMapper returns a new sdk.AccountMapper that
 // uses go-amino to (binary) encode and decode concrete sdk.Accounts.
 // nolint
-func NewAccountMapper(cdc *wire.Codec, key sdk.StoreKey, proto sdk.Account) accountMapper {
+func NewAccountMapper(cdc *wire.Codec, key sdk.StoreKey, accConstructor AccountConstructor) accountMapper {
+	nextAccNumKey, _ := cdc.MarshalBinary("NextAccountNum")
 	return accountMapper{
-		key:   key,
-		proto: proto,
-		cdc:   cdc,
+		key:            key,
+		accConstructor: accConstructor,
+		cdc:            cdc,
+		nextAccNumKey:  nextAccNumKey,
 	}
 }
 
@@ -54,7 +59,7 @@ func (am accountMapper) Seal() sealedAccountMapper {
 
 // Implements sdk.AccountMapper.
 func (am accountMapper) NewAccountWithAddress(ctx sdk.Context, addr sdk.Address) sdk.Account {
-	acc := am.clonePrototype()
+	acc := am.accConstructor()
 	acc.SetAddress(addr)
 	return acc
 }
@@ -93,30 +98,6 @@ func (sam sealedAccountMapper) WireCodec() *wire.Codec {
 
 //----------------------------------------
 // misc.
-
-// Creates a new struct (or pointer to struct) from am.proto.
-func (am accountMapper) clonePrototype() sdk.Account {
-	protoRt := reflect.TypeOf(am.proto)
-	if protoRt.Kind() == reflect.Ptr {
-		protoCrt := protoRt.Elem()
-		if protoCrt.Kind() != reflect.Struct {
-			panic("accountMapper requires a struct proto sdk.Account, or a pointer to one")
-		}
-		protoRv := reflect.New(protoCrt)
-		clone, ok := protoRv.Interface().(sdk.Account)
-		if !ok {
-			panic(fmt.Sprintf("accountMapper requires a proto sdk.Account, but %v doesn't implement sdk.Account", protoRt))
-		}
-		return clone
-	}
-
-	protoRv := reflect.New(protoRt).Elem()
-	clone, ok := protoRv.Interface().(sdk.Account)
-	if !ok {
-		panic(fmt.Sprintf("accountMapper requires a proto sdk.Account, but %v doesn't implement sdk.Account", protoRt))
-	}
-	return clone
-}
 
 func (am accountMapper) encodeAccount(acc sdk.Account) []byte {
 	bz, err := am.cdc.MarshalBinaryBare(acc)
