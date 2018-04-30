@@ -145,3 +145,13 @@ type Trie interface {
 	Prove(key []byte, fromLevel uint, proofDb ethdb.Putter) error
 }
 ```
+`trie.Database` is not an interface, but it can be instantiated using this constructor:
+```go
+func NewDatabase(diskdb ethdb.Database) *Database {
+```
+Both `trie.NodeIterator` and `ethdb.Putter` are interfaces that can be suitably implemented
+
+# Conclusion
+It should be possible to instantiate blockchain and state processor objects and plug them into KVStore and Tendermint consensus respectively.
+This will be the next objective
+ 
