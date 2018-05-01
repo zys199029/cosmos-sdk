@@ -11,7 +11,8 @@ func NewBlockChain(
     vmConfig vm.Config,
 ) (*BlockChain, error) {
 ```
-both `ethdb.Database` and `consensus.Engine` are interfaces, and can be suitably implemented using `KVStore` and Tendermint, which really touching go-etherum code.
+both `ethdb.Database` and `consensus.Engine` are interfaces. First one can be suitably implemented using `KVStore`, which really touching go-etherum code.
+The second one is likely not required for what we want to do, i.e., create the `StateProcessor`.
 
 # Instantiate `core.StateProcessor`
 Here is the constructor signature:
@@ -25,37 +26,22 @@ func NewStateProcessor(config *params.ChainConfig, bc *BlockChain, engine consen
 }
 ```
 
-# Processing a block
-In order to process a block of transactions using an instance of `core.StateProcessor`, one needs to call this method:
+# Apply transaction to the state
+In order to apply transaction to the state, using an instance of `core.StateProcessor`, one needs to call this method:
 ```go
-func (p *StateProcessor) Process(
-	block *types.Block,
+func ApplyTransaction(
+	config *params.ChainConfig,
+	bc *BlockChain,
+	author *common.Address,
+	gp *GasPool,
 	statedb *state.StateDB,
-	cfg vm.Config,
-) (types.Receipts, []*types.Log, uint64, error) {
+	header *types.Header,
+	tx *types.Transaction,
+	usedGas *uint64,
+	cfg vm.Config
+) (*types.Receipt, uint64, error) {
 ```
-`types.Block` is a concrete type, not an interface:
-```go
-type Block struct {
-	header       *Header
-	uncles       []*Header
-	transactions Transactions
-
-	// caches
-	hash atomic.Value
-	size atomic.Value
-
-	// Td is used by package core to store the total difficulty
-	// of the chain up to and including the block.
-	td *big.Int
-
-	// These fields are used by package eth to track
-	// inter-peer block relay.
-	ReceivedAt   time.Time
-	ReceivedFrom interface{}
-}
-```
-It references another concrete type, `Header`:
+It references concrete type `Header`:
 ```go
 type Header struct {
 	ParentHash  common.Hash    `json:"parentHash"       gencodec:"required"`
@@ -78,7 +64,8 @@ type Header struct {
 Here, `common.Hash` is a type based on 32-byte array, and `common.Address` is based on 20-byte array. `BlockNonce` is based on 8-byte array.
 `Bloom` is based on 256-byte array. As long as we produce hashes, addresses, nonces, and bloom filters of the same size, we should be able
 to use this code without any modifications too.
-Type `Transactions` is based on the slice of pointers to the type `Transaction`:
+Type `GasPool` is based on `uint64`.
+Type `Transaction` is also concrete:
 ```go
 type Transaction struct {
 	data txdata
