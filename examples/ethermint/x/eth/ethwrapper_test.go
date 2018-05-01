@@ -23,16 +23,20 @@ func TestInstantiate(t *testing.T) {
 	var kvStore sdk.KVStore = multiStore.GetKVStore(storeKey)
 	kvd := ethdb.NewKVDatabase(kvStore)
 
+	chainConfig, _, err := eth_core.SetupGenesisBlock(kvd, DefaultGenesis)
+	if err != nil {
+		t.Errorf("Unexpected error: %v", err)
+	}
 
-	_, err := eth_core.NewBlockChain(
+	_, err = eth_core.NewBlockChain(
 		kvd,
 		&eth_core.CacheConfig{},
-		DefaultChainConfig,
+		chainConfig,
 		nil, // Consensus Engine
 		eth_vm.Config{},
 		)
 	// Currently getting "Genesis not found on chain"
 	if err != nil {
-		//t.Printf("Unexpected error: %v", err)
+		t.Errorf("Unexpected error: %v", err)
 	}
 }

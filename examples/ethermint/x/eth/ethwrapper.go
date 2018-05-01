@@ -23,6 +23,10 @@ var DefaultChainConfig = &eth_params.ChainConfig{
 		Ethash:              nil,
 }
 
+var DefaultGenesis = &eth_core.Genesis{
+	Config: DefaultChainConfig,
+}
+
 // Instantiation of the ethereum state processor based on KVStore and tendermint consensus
 type StateProcessor struct {
 	blockchain *eth_core.BlockChain
