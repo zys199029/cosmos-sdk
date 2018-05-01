@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	eth_types "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
@@ -37,8 +37,8 @@ func (msg RawTxMsg) GetSignBytes() []byte {
 	return msg.raw
 }
 
-func (msg RawTxMsg) DecodeRaw() (*ethtypes.Transaction, error) {
-	tx := new(ethtypes.Transaction)
+func (msg RawTxMsg) DecodeRaw() (*eth_types.Transaction, error) {
+	tx := new(eth_types.Transaction)
 	if err := tx.DecodeRLP(rlp.NewStream(bytes.NewReader(msg.raw), uint64(len(msg.raw)))); err != nil {
 		return nil, err
 	}
