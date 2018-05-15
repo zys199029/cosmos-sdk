@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 
+	"github.com/cosmos/cosmos-sdk/abciapp"
 	crypto "github.com/tendermint/go-crypto"
 	cmn "github.com/tendermint/tmlibs/common"
 )
@@ -42,10 +43,10 @@ type Account interface {
 // AccountMapper stores and retrieves accounts from stores
 // retrieved from the context.
 type AccountMapper interface {
-	NewAccountWithAddress(ctx Context, addr Address) Account
-	GetAccount(ctx Context, addr Address) Account
-	SetAccount(ctx Context, acc Account)
-	IterateAccounts(ctx Context, process func(Account) (stop bool))
+	NewAccountWithAddress(ctx abciapp.Context, addr Address) Account
+	GetAccount(ctx abciapp.Context, addr Address) Account
+	SetAccount(ctx abciapp.Context, acc Account)
+	IterateAccounts(ctx abciapp.Context, process func(Account) (stop bool))
 }
 
 // AccountDecoder unmarshals account bytes

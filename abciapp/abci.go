@@ -1,4 +1,4 @@
-package types
+package abciapp
 
 import abci "github.com/tendermint/abci/types"
 

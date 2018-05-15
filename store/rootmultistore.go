@@ -10,7 +10,7 @@ import (
 	dbm "github.com/tendermint/tmlibs/db"
 	"github.com/tendermint/tmlibs/merkle"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	abciapp "github.com/cosmos/cosmos-sdk/abciapp"
 )
 
 const (
@@ -45,7 +45,7 @@ func NewCommitMultiStore(db dbm.DB) *rootMultiStore {
 
 // Implements Store.
 func (rs *rootMultiStore) GetStoreType() StoreType {
-	return sdk.StoreTypeMulti
+	return abciapp.StoreTypeMulti
 }
 
 // Implements CommitMultiStore.
@@ -218,12 +218,12 @@ func (rs *rootMultiStore) Query(req abci.RequestQuery) abci.ResponseQuery {
 	store := rs.getStoreByName(storeName)
 	if store == nil {
 		msg := fmt.Sprintf("no such store: %s", storeName)
-		return sdk.ErrUnknownRequest(msg).QueryResult()
+		return abciapp.ErrUnknownRequest(msg).QueryResult()
 	}
 	queryable, ok := store.(Queryable)
 	if !ok {
 		msg := fmt.Sprintf("store %s doesn't support queries", storeName)
-		return sdk.ErrUnknownRequest(msg).QueryResult()
+		return abciapp.ErrUnknownRequest(msg).QueryResult()
 	}
 
 	// trim the path and make the query
@@ -235,9 +235,9 @@ func (rs *rootMultiStore) Query(req abci.RequestQuery) abci.ResponseQuery {
 // parsePath expects a format like /<storeName>[/<subpath>]
 // Must start with /, subpath may be empty
 // Returns error if it doesn't start with /
-func parsePath(path string) (storeName string, subpath string, err sdk.Error) {
+func parsePath(path string) (storeName string, subpath string, err abciapp.Error) {
 	if !strings.HasPrefix(path, "/") {
-		err = sdk.ErrUnknownRequest(fmt.Sprintf("invalid path: %s", path))
+		err = abciapp.ErrUnknownRequest(fmt.Sprintf("invalid path: %s", path))
 		return
 	}
 	paths := strings.SplitN(path[1:], "/", 2)
@@ -258,14 +258,14 @@ func (rs *rootMultiStore) loadCommitStoreFromParams(id CommitID, params storePar
 		db = dbm.NewPrefixDB(rs.db, []byte("s/k:"+params.key.Name()+"/"))
 	}
 	switch params.typ {
-	case sdk.StoreTypeMulti:
+	case abciapp.StoreTypeMulti:
 		panic("recursive MultiStores not yet supported")
 		// TODO: id?
 		// return NewCommitMultiStore(db, id)
-	case sdk.StoreTypeIAVL:
+	case abciapp.StoreTypeIAVL:
 		store, err = LoadIAVLStore(db, id)
 		return
-	case sdk.StoreTypeDB:
+	case abciapp.StoreTypeDB:
 		panic("dbm.DB is not a CommitStore")
 	default:
 		panic(fmt.Sprintf("unrecognized store type %v", params.typ))

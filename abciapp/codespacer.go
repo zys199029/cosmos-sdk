@@ -1,4 +1,4 @@
-package types
+package abciapp
 
 // Codespacer is a simple struct to track reserved codespaces
 type Codespacer struct {

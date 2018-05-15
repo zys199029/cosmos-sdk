@@ -1,7 +1,7 @@
 package store
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	abciapp "github.com/cosmos/cosmos-sdk/abciapp"
 	dbm "github.com/tendermint/tmlibs/db"
 )
 
@@ -11,7 +11,7 @@ type dbStoreAdapter struct {
 
 // Implements Store.
 func (dbStoreAdapter) GetStoreType() StoreType {
-	return sdk.StoreTypeDB
+	return abciapp.StoreTypeDB
 }
 
 // Implements KVStore.
@@ -20,11 +20,11 @@ func (dsa dbStoreAdapter) CacheWrap() CacheWrap {
 }
 
 func (dsa dbStoreAdapter) SubspaceIterator(prefix []byte) Iterator {
-	return dsa.Iterator(prefix, sdk.PrefixEndBytes(prefix))
+	return dsa.Iterator(prefix, abciapp.PrefixEndBytes(prefix))
 }
 
 func (dsa dbStoreAdapter) ReverseSubspaceIterator(prefix []byte) Iterator {
-	return dsa.ReverseIterator(prefix, sdk.PrefixEndBytes(prefix))
+	return dsa.ReverseIterator(prefix, abciapp.PrefixEndBytes(prefix))
 }
 
 // dbm.DB implements KVStore so we can CacheKVStore it.

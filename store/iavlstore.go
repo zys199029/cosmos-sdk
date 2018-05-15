@@ -9,7 +9,7 @@ import (
 	cmn "github.com/tendermint/tmlibs/common"
 	dbm "github.com/tendermint/tmlibs/db"
 
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	abciapp "github.com/cosmos/cosmos-sdk/abciapp"
 )
 
 const (
@@ -86,7 +86,7 @@ func (st *iavlStore) LastCommitID() CommitID {
 
 // Implements Store.
 func (st *iavlStore) GetStoreType() StoreType {
-	return sdk.StoreTypeIAVL
+	return abciapp.StoreTypeIAVL
 }
 
 // Implements Store.
@@ -127,12 +127,12 @@ func (st *iavlStore) ReverseIterator(start, end []byte) Iterator {
 
 // Implements KVStore.
 func (st *iavlStore) SubspaceIterator(prefix []byte) Iterator {
-	return st.Iterator(prefix, sdk.PrefixEndBytes(prefix))
+	return st.Iterator(prefix, abciapp.PrefixEndBytes(prefix))
 }
 
 // Implements KVStore.
 func (st *iavlStore) ReverseSubspaceIterator(prefix []byte) Iterator {
-	return st.ReverseIterator(prefix, sdk.PrefixEndBytes(prefix))
+	return st.ReverseIterator(prefix, abciapp.PrefixEndBytes(prefix))
 }
 
 // Query implements ABCI interface, allows queries
@@ -145,7 +145,7 @@ func (st *iavlStore) ReverseSubspaceIterator(prefix []byte) Iterator {
 func (st *iavlStore) Query(req abci.RequestQuery) (res abci.ResponseQuery) {
 	if len(req.Data) == 0 {
 		msg := "Query cannot be zero length"
-		return sdk.ErrTxDecode(msg).QueryResult()
+		return abciapp.ErrTxDecode(msg).QueryResult()
 	}
 
 	tree := st.tree
@@ -188,7 +188,7 @@ func (st *iavlStore) Query(req abci.RequestQuery) (res abci.ResponseQuery) {
 		res.Value = cdc.MustMarshalBinary(KVs)
 	default:
 		msg := fmt.Sprintf("Unexpected Query path: %v", req.Path)
-		return sdk.ErrUnknownRequest(msg).QueryResult()
+		return abciapp.ErrUnknownRequest(msg).QueryResult()
 	}
 	return
 }

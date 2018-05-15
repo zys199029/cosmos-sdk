@@ -1,7 +1,7 @@
 package store
 
 import (
-	sdk "github.com/cosmos/cosmos-sdk/types"
+	abciapp "github.com/cosmos/cosmos-sdk/abciapp"
 )
 
 //----------------------------------------
@@ -42,7 +42,7 @@ func newCacheMultiStoreFromCMS(cms cacheMultiStore) cacheMultiStore {
 
 // Implements Store.
 func (cms cacheMultiStore) GetStoreType() StoreType {
-	return sdk.StoreTypeMulti
+	return abciapp.StoreTypeMulti
 }
 
 // Implements CacheMultiStore.
