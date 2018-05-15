@@ -1,4 +1,4 @@
-package types
+package abciapp
 
 import (
 	"fmt"
@@ -258,7 +258,4 @@ func PrefixEndBytes(prefix []byte) []byte {
 	return end
 }
 
-//----------------------------------------
-
-// key-value result for iterator queries
 type KVPair cmn.KVPair

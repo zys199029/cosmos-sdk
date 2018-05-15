@@ -1,4 +1,4 @@
-package types
+package abciapp
 
 import (
 	"testing"
