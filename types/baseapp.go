@@ -20,6 +20,9 @@ import (
 // and to avoid affecting the Merkle root.
 var dbHeaderKey = []byte("header")
 
+// type alias for abciapp.Context
+type Context = abciapp.Context
+
 // The ABCI application
 type BaseApp struct {
 	// initialized on creation
@@ -30,7 +33,7 @@ type BaseApp struct {
 	codespacer *abciapp.Codespacer // handle module codespacing
 
 	// must be set
-	txDecoder   TxDecoder   // unmarshal []byte into sdk.Tx
+	txDecoder   TxDecoder   // unmarshal []byte into Tx
 	anteHandler AnteHandler // ante handler for fee and auth
 }
 
@@ -81,7 +84,7 @@ func (app *BaseApp) CheckTx(txBytes []byte) abci.ResponseCheckTx {
 func (app *BaseApp) DeliverTx(txBytes []byte) abci.ResponseDeliverTx {
 
 	// Decode the Tx.
-	var result sdk.Result
+	var result abciapp.Result
 	var tx, err = app.txDecoder(txBytes)
 	if err != nil {
 		result = err.Result()
@@ -125,7 +128,7 @@ func (app *BaseApp) EndBlock(req abci.RequestEndBlock) (res abci.ResponseEndBloc
 
 // txBytes may be nil in some cases, eg. in tests.
 // Also, in the future we may support "internal" transactions.
-func (app *BaseApp) runTx(ctx sdk.Context, isCheckTx bool, txBytes []byte, tx Tx) (result sdk.Result) {
+func (app *BaseApp) runTx(ctx abciapp.Context, isCheckTx bool, txBytes []byte, tx Tx) (result abciapp.Result) {
 	// Handle any panics.
 	defer func() {
 		if r := recover(); r != nil {
