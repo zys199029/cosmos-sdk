@@ -23,10 +23,6 @@ type App struct {
 	cms        CommitMultiStore // Main (uncached) state
 	codespacer *Codespacer      // handle module codespacing
 
-	// must be set
-	checkTxer   CheckTxer   // initialize state with validators and state blob
-	deliverTxer DeliverTxer // logic to run before any txs
-
 	// may be nil
 	initChainer  InitChainer  // initialize state with validators and state blob
 	beginBlocker BeginBlocker // logic to run before any txs
