@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"os"
 
-	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/client/context"
 	"github.com/cosmos/cosmos-sdk/client/utils"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -15,16 +14,12 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/cosmos/cosmos-sdk/x/bank"
 )
 
-const (
-	flagTo     = "to"
-	flagAmount = "amount"
-	flagChain  = "chain"
-)
-
-// IBCTransferCmd implements the IBC transfer command.
-func IBCTransferCmd(cdc *wire.Codec) *cobra.Command {
+// IBC transfer command
+func IBCSendTxCmd(cdc *wire.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "transfer",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -48,32 +43,35 @@ func IBCTransferCmd(cdc *wire.Codec) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String(flagTo, "", "Address to send coins")
-	cmd.Flags().String(flagAmount, "", "Amount of coins to send")
-	cmd.Flags().String(flagChain, "", "Destination chain to send coins")
-
+	cmd.Flags().String(FlagTo, "", "Address to send coins")
+	cmd.Flags().String(FlagAmount, "", "Amount of coins to send")
+	cmd.Flags().String(FlagDestChain, "", "Destination chain to send coins")
 	return cmd
 }
 
 func buildMsg(from sdk.AccAddress) (sdk.Msg, error) {
-	amount := viper.GetString(flagAmount)
+	amount := viper.GetString(FlagAmount)
 	coins, err := sdk.ParseCoins(amount)
 	if err != nil {
 		return nil, err
 	}
 
-	dest := viper.GetString(flagTo)
+	dest := viper.GetString(FlagTo)
 	bz, err := hex.DecodeString(dest)
 	if err != nil {
 		return nil, err
 	}
 	to := sdk.AccAddress(bz)
 
-	packet := ibc.NewIBCPacket(from, to, coins, viper.GetString(client.FlagChainID),
-		viper.GetString(flagChain))
+	payload := bank.PayloadSend{
+		SrcAddr:  from,
+		DestAddr: to,
+		Coins:    coins,
+	}
 
-	msg := ibc.IBCTransferMsg{
-		IBCPacket: packet,
+	msg := bank.MsgIBCSend{
+		PayloadSend: payload,
+		DestChain:   viper.GetString(FlagDestChain),
 	}
 
 	return msg, nil

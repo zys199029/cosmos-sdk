@@ -16,12 +16,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const (
-	flagTo     = "to"
-	flagAmount = "amount"
-)
-
-// SendTxCmd will create a send tx and sign it with the given key.
+// SendTxCmd will create a send tx and sign it with the given key
 func SendTxCmd(cdc *wire.Codec) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "send",
@@ -38,14 +33,13 @@ func SendTxCmd(cdc *wire.Codec) *cobra.Command {
 			}
 
 			toStr := viper.GetString(flagTo)
-
 			to, err := sdk.AccAddressFromBech32(toStr)
 			if err != nil {
 				return err
 			}
 
 			// parse coins trying to be sent
-			amount := viper.GetString(flagAmount)
+			amount := viper.GetString(FlagAmount)
 			coins, err := sdk.ParseCoins(amount)
 			if err != nil {
 				return err
@@ -73,8 +67,7 @@ func SendTxCmd(cdc *wire.Codec) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String(flagTo, "", "Address to send coins")
-	cmd.Flags().String(flagAmount, "", "Amount of coins to send")
-
+	cmd.Flags().String(FlagTo, "", "Address to send coins")
+	cmd.Flags().String(FlagAmount, "", "Amount of coins to send")
 	return cmd
 }
