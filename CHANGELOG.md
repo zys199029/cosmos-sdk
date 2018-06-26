@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.20.0
+
+*TBD*
+
+BREAKING CHANGES
+* Change default ports from 466xx to 266xx
+* AltBytes renamed to Memo, now a string, max 100 characters, costs a bit of gas
+* Transactions now take a list of Messages
+* Signers of a transaction now only sign over their account and sequence number
+* Removed MsgChangePubKey from auth
+* Removed setPubKey from account mapper
+
+FEATURES
+* [gaiacli] You can now attach a simple text-only memo to any transaction, with the `--memo` flag
+* [lcd] Queried TXs now include the tx hash to identify each tx
+* [mockapp] CompleteSetup() no longer takes a testing parameter
+* [governance] Implemented MVP
+  * Supported proposal types: just binary (pass/fail) TextProposals for now
+  * Proposals need deposits to be votable; deposits are burned if proposal fails
+  * Delegators delegate votes to validator by default but can override (for their stake)
+* [tools] make get_tools installs tendermint's linter, and gometalinter
+* [tools] Switch gometalinter to the stable version
+* [tools] Add checking for misspellings and for incorrectly formatted files in circle CI
+* [server] Default config now creates a profiler at port 6060, and increase p2p send/recv rates
+
+FIXES
+* \#1259 - fix bug where certain tests that could have a nil pointer in defer
+* \#1052 - Make all now works
+* Retry on HTTP request failure in CLI tests, add option to retry tests in Makefile
+* Fixed bug where chain ID wasn't passed properly in x/bank REST handler
+* Fixed bug where `democli account` didn't decode the account data correctly
+* \#1343 - fixed unnecessary parallelism in CI
+* \#1258 - printing big.rat's can no longer overflow int64
+
 ## 0.19.0
 
 *June 13, 2018*
