@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sync"
 
-	abci "github.com/tendermint/tendermint/abci/types"
 	"github.com/tendermint/go-amino"
 	"github.com/tendermint/iavl"
+	abci "github.com/tendermint/tendermint/abci/types"
 	cmn "github.com/tendermint/tmlibs/common"
 	dbm "github.com/tendermint/tmlibs/db"
 
@@ -232,6 +232,7 @@ var _ Iterator = (*iavlIterator)(nil)
 // CONTRACT: Caller must release the iavlIterator, as each one creates a new
 // goroutine.
 func newIAVLIterator(tree *iavl.Tree, start, end []byte, ascending bool) *iavlIterator {
+	fmt.Printf("made a new iavl iterator with start %s, end %s, ascending %v\n", start, end, ascending)
 	iter := &iavlIterator{
 		tree:      tree,
 		start:     cp(start),
@@ -339,6 +340,7 @@ func (iter *iavlIterator) waitInit() {
 func (iter *iavlIterator) receiveNext() {
 	kvPair, ok := <-iter.iterCh
 	if ok {
+		fmt.Printf("next key %s, value %x\n", kvPair.Key, kvPair.Value)
 		iter.setNext(kvPair.Key, kvPair.Value)
 	} else {
 		iter.setInvalid()
