@@ -1,6 +1,8 @@
 package gov
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	wire "github.com/cosmos/cosmos-sdk/wire"
 	"github.com/cosmos/cosmos-sdk/x/bank"
@@ -287,6 +289,7 @@ func (keeper Keeper) RefundDeposits(ctx sdk.Context, proposalID int64) {
 
 	for ; depositsIterator.Valid(); depositsIterator.Next() {
 		deposit := &Deposit{}
+		fmt.Printf("valid: %v, prefix: %s, key: %s, value: %x\n", depositsIterator.Valid(), KeyDepositsSubspace(proposalID), depositsIterator.Key(), depositsIterator.Value())
 		keeper.cdc.MustUnmarshalBinary(depositsIterator.Value(), deposit)
 
 		_, _, err := keeper.ck.AddCoins(ctx, deposit.Depositer, deposit.Amount)

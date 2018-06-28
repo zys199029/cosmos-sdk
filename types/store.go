@@ -131,6 +131,7 @@ type Iterator = dbm.Iterator
 
 // Iterator over all the keys with a certain prefix in ascending order
 func KVStorePrefixIterator(kvs KVStore, prefix []byte) Iterator {
+	fmt.Printf("start bytes: %s, end bytes: %s\n", prefix, PrefixEndBytes(prefix))
 	return kvs.Iterator(prefix, PrefixEndBytes(prefix))
 }
 
