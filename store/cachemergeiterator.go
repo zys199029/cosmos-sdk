@@ -1,6 +1,9 @@
 package store
 
 import (
+	"fmt"
+	"reflect"
+
 	"bytes"
 )
 
@@ -177,12 +180,14 @@ func (iter *cacheMergeIterator) skipUntilExistsOrInvalid() bool {
 
 		// If parent is invalid, fast-forward cache.
 		if !iter.parent.Valid() {
+			fmt.Printf("ff cache\n")
 			iter.skipCacheDeletes(nil)
 			return iter.cache.Valid()
 		}
 		// Parent is valid.
 
 		if !iter.cache.Valid() {
+			fmt.Printf("parent %v valid, cache %v invalid, key: %s\n", reflect.TypeOf(iter.parent), reflect.TypeOf(iter.cache), iter.parent.Key())
 			return true
 		}
 		// Parent is valid, cache is valid.
