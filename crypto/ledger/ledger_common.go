@@ -6,9 +6,6 @@ import (
 
 var device *ledger.Ledger
 
-// Ledger derivation path
-type DerivationPath = []uint32
-
 // getLedger gets a copy of the device, and caches it
 func getLedger() (*ledger.Ledger, error) {
 	var err error

@@ -133,8 +133,8 @@ func (kb dbKeybase) Derive(name, mnemonic, passwd string, params hd.BIP44Params)
 
 // CreateLedger creates a new locally-stored reference to a Ledger keypair
 // It returns the created key info and an error if the Ledger could not be queried
-func (kb dbKeybase) CreateLedger(name string, path crypto.DerivationPath, algo SigningAlgo) (Info, error) {
-	if algo != Secp256k1 {
+func (kb dbKeybase) CreateLedger(name string, path crypto.DerivationPath, algo SigningAlgo) (i Info, e error) {
+	/*if algo != Secp256k1 {
 		return nil, ErrUnsupportedSigningAlgo
 	}
 	priv, err := crypto.NewPrivKeyLedgerSecp256k1(path)
@@ -143,6 +143,8 @@ func (kb dbKeybase) CreateLedger(name string, path crypto.DerivationPath, algo S
 	}
 	pub := priv.PubKey()
 	return kb.writeLedgerKey(pub, path, name), nil
+	*/
+	return
 }
 
 // CreateOffline creates a new reference to an offline keypair
@@ -210,12 +212,12 @@ func (kb dbKeybase) Sign(name, passphrase string, msg []byte) (sig tcrypto.Signa
 		if err != nil {
 			return nil, nil, err
 		}
-	case ledgerInfo:
-		linfo := info.(ledgerInfo)
-		priv, err = crypto.NewPrivKeyLedgerSecp256k1(linfo.Path)
-		if err != nil {
-			return
-		}
+	/*case ledgerInfo:
+	linfo := info.(ledgerInfo)
+	priv, err = crypto.NewPrivKeyLedgerSecp256k1(linfo.Path)
+	if err != nil {
+		return
+	}*/
 	case offlineInfo:
 		linfo := info.(offlineInfo)
 		fmt.Printf("Bytes to sign:\n%s", msg)
