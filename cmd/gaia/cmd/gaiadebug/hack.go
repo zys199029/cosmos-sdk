@@ -65,7 +65,7 @@ func runHackCmd(cmd *cobra.Command, args []string) error {
 	app.cdc.MustUnmarshalBinaryBare(hexToBytes("1624de622049a863bcfbbe13665e209f9564e785694516a2ee10b5d97ce2541314310104f1"), &trouble)
 	fmt.Printf("Address: %s\n", trouble.Address())
 
-	//topHeight := lastBlockHeight
+	topHeight := lastBlockHeight
 	//bottomHeight := int64(0)
 	checkHeight := int64(571446)
 	for {
@@ -83,8 +83,10 @@ func runHackCmd(cmd *cobra.Command, args []string) error {
 		fmt.Println("checking height", checkHeight, found, val)
 		if found {
 			fmt.Printf("Validator found: owner %s, power %v, status %d\n", val.GetOwner(), val.GetPower(), val.GetStatus())
+			checkHeight += (topHeight - checkHeight) / 2
+		} else {
+			checkHeight -= (topHeight - checkHeight) / 2
 		}
-		checkHeight -= 1
 	}
 }
 
