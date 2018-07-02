@@ -62,7 +62,7 @@ func runHackCmd(cmd *cobra.Command, args []string) error {
 
 	// owner of the validator the bonds, gets revoked, later unbonds, and then later is still found in the bypower store
 	var trouble crypto.PubKey
-	app.cdc.MustUnmarshalBinary(hexToBytes(""), &trouble)
+	app.cdc.MustUnmarshalBinaryBare(hexToBytes("1624de622049a863bcfbbe13665e209f9564e785694516a2ee10b5d97ce2541314310104f1"), &trouble)
 
 	topHeight := lastBlockHeight
 	bottomHeight := int64(0)
