@@ -37,7 +37,7 @@ func BeginBlocker(ctx sdk.Context, req abci.RequestBeginBlock, sk Keeper) (tags 
 		if err != nil {
 			panic(err)
 		}
-		fmt.Printf("Validator addr: %s, power: %d\n", pubkey.Address(), validator.Validator.Power)
+		fmt.Printf("Validator pubkey: %x, power: %d\n", pubkey.Bytes(), validator.Validator.Power)
 		sk.handleValidatorSignature(ctx, pubkey, present)
 	}
 

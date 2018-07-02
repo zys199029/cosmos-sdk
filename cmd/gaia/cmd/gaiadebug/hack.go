@@ -61,11 +61,12 @@ func runHackCmd(cmd *cobra.Command, args []string) error {
 	// So here we do a binary search on the past states to find when the powerKey first showed up ...
 
 	// owner of the validator the bonds, gets revoked, later unbonds, and then later is still found in the bypower store
-	trouble := hexToBytes("747A72E570DD41F95687D3C2DD40128A9DBF798A")
+	var trouble crypto.PubKey
+	app.cdc.MustUnmarshalBinary(hexToBytes(""), &trouble)
 
 	topHeight := lastBlockHeight
 	bottomHeight := int64(0)
-	checkHeight := bottomHeight
+	checkHeight := topHeight
 	for {
 		// load the given version of the state
 		err = app.LoadVersion(checkHeight, app.keyMain)
@@ -76,9 +77,9 @@ func runHackCmd(cmd *cobra.Command, args []string) error {
 		ctx := app.NewContext(true, abci.Header{})
 
 		// check for the powerkey and the validator from the store
-		store := ctx.KVStore(app.keyStake)
+		// store := ctx.KVStore(app.keyStake)
 		val, found := app.stakeKeeper.GetValidatorByPubKey(ctx, trouble)
-		fmt.Println("checking height", checkHeight, res, val)
+		fmt.Println("checking height", checkHeight, found, val)
 		if !found {
 			bottomHeight = checkHeight
 		} else {
