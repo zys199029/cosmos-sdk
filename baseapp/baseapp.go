@@ -580,9 +580,7 @@ func (app *BaseApp) Commit() (res abci.ResponseCommit) {
 	// NOTE: safe because Tendermint holds a lock on the mempool for Commit.
 	// Use the header from this latest block.
 	app.setCheckState(header)
-
-	// Empty the Deliver state
-	app.deliverState = nil
+	app.setDeliverState(header)
 
 	return abci.ResponseCommit{
 		Data: commitID.Hash,
