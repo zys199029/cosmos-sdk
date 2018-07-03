@@ -75,7 +75,7 @@ func runHackCmd(cmd *cobra.Command, args []string) error {
 
 	//topHeight := lastBlockHeight
 	//bottomHeight := int64(0)
-	checkHeight := int64(635325)
+	checkHeight := int64(635326)
 	// load the given version of the state
 	err = app.LoadVersion(checkHeight, app.keyMain)
 	if err != nil {
