@@ -83,8 +83,16 @@ func runHackCmd(cmd *cobra.Command, args []string) error {
 		ctx := app.NewContext(true, abci.Header{})
 
 		// check for the powerkey and the validator from the store
-		// store := ctx.KVStore(app.keyStake)
-		val, found := app.stakeKeeper.GetValidator(ctx, trouble)
+		store := ctx.KVStore(app.keyStake)
+		key := stake.ValidatorCliffKey
+		bz := store.Get(key)
+		var val stake.Validator
+		var found bool
+		if bz == nil {
+			found = false
+		} else {
+			val, found = app.stakeKeeper.GetValidator(ctx, bz)
+		}
 		fmt.Println("checking height", checkHeight, found, val)
 		if found {
 			fmt.Printf("Validator found: owner %s, pka %s, power %v, status %d\n", val.GetOwner(), val.GetPubKey().Address(), val.GetPower(), val.GetStatus())
