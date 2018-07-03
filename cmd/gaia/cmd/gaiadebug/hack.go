@@ -91,6 +91,7 @@ func runHackCmd(cmd *cobra.Command, args []string) error {
 		if bz == nil {
 			found = false
 		} else {
+			fmt.Printf("got cliff validator at height %d: %s\n", checkHeight, string(bz))
 			val, found = app.stakeKeeper.GetValidator(ctx, bz)
 		}
 		fmt.Println("checking height", checkHeight, found, val)
