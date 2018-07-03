@@ -228,6 +228,7 @@ func (app *BaseApp) initFromStore(mainKey sdk.StoreKey) error {
 
 	// initialize Check state
 	app.setCheckState(abci.Header{})
+	app.setDeliverState(abci.Header{})
 
 	return nil
 }
