@@ -83,8 +83,7 @@ func runHackCmd(cmd *cobra.Command, args []string) error {
 		os.Exit(1)
 	}
 	//ctx := app.NewContext(true, abci.Header{})
-	app.bapp.setDeliverState(abci.Header{})
-	res := app.DeliverTx(txn)
+	res := app.CheckTx(txn)
 	fmt.Printf("Res: %v\n", res)
 	return nil
 }
