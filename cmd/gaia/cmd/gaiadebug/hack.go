@@ -67,12 +67,12 @@ func runHackCmd(cmd *cobra.Command, args []string) error {
 	//fmt.Printf("Address: %s\n", trouble.Address())
 
 	var trouble sdk.Address
-	trouble = hexToBytes("631E2B3AF1F9FE4873D21B7B74CEF568E834F77D")
+	trouble = hexToBytes("C6F86E87B34556CF6F066E09D4CAA5915110EC91")
 	fmt.Printf("Trouble: %s\n", trouble)
 
 	//topHeight := lastBlockHeight
 	//bottomHeight := int64(0)
-	checkHeight := int64(571446)
+	checkHeight := int64(635327)
 	for {
 		// load the given version of the state
 		err = app.LoadVersion(checkHeight, app.keyMain)
@@ -82,19 +82,8 @@ func runHackCmd(cmd *cobra.Command, args []string) error {
 		}
 		ctx := app.NewContext(true, abci.Header{})
 
-		// check for the powerkey and the validator from the store
-		store := ctx.KVStore(app.keyStake)
-		key := stake.ValidatorCliffKey
-		bz := store.Get(key)
-		var val stake.Validator
-		var found bool
-		if bz == nil {
-			found = false
-		} else {
-			fmt.Printf("got cliff validator at height %d: %s\n", checkHeight, string(bz))
-			val, found = app.stakeKeeper.GetValidator(ctx, bz)
-		}
-		fmt.Println("checking height", checkHeight, found, val)
+		val, found := app.stakeKeeper.GetValidator(ctx, trouble)
+		fmt.Println("Checking height", checkHeight, found, val)
 		if found {
 			fmt.Printf("Validator found: owner %s, pka %s, power %v, status %d\n", val.GetOwner(), val.GetPubKey().Address(), val.GetPower(), val.GetStatus())
 		}
