@@ -2,6 +2,7 @@ package stake
 
 import (
 	"bytes"
+	"fmt"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	abci "github.com/tendermint/abci/types"
@@ -163,7 +164,9 @@ func delegate(ctx sdk.Context, k Keeper, delegatorAddr sdk.Address,
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("bondAmount: %v\n", bondAmt.Amount)
 	validator, pool, newShares := validator.addTokensFromDel(pool, bondAmt.Amount)
+	fmt.Printf("newShares: %v\n", newShares)
 	bond.Shares = bond.Shares.Add(newShares)
 
 	// Update bond height

@@ -70,25 +70,21 @@ func runHackCmd(cmd *cobra.Command, args []string) error {
 	trouble = hexToBytes("C6F86E87B34556CF6F066E09D4CAA5915110EC91")
 	fmt.Printf("Trouble: %s\n", trouble)
 
+	txn := hexToBytes("/QHwYl3rD+s2HQMLCgY3NzY4VDEEEhTG+G6Hs0VWz28GbgnUyqWRURDskR8WJN5iIJgZutl4kecZKcXg+Z1lLssj4y4TGQIJPvdfE9penyRxIwoFc3RlYWsRAAAAAAAAAAEEBBMOAwERAAAAAAAAAAAEEQAAAAAAAw1ABB4DAQ8WJN5iIN9PbBo52JOe4p+9EkHiKNGVrE3dOFP8pBNg02sViyLbFz2h2ypAIaSOp72OopDplyWekrUhv1yazliln1/Avo61WtXoC3pQvkqHCIpdThTJj2fDdHVgQXFp/duB7ZRIkBvwRh/wChkAAAAAAAABNyEAAAAAAAAAAAQE")
+
 	//topHeight := lastBlockHeight
 	//bottomHeight := int64(0)
-	checkHeight := int64(635327)
-	for {
-		// load the given version of the state
-		err = app.LoadVersion(checkHeight, app.keyMain)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		ctx := app.NewContext(true, abci.Header{})
-
-		val, found := app.stakeKeeper.GetValidator(ctx, trouble)
-		fmt.Println("Checking height", checkHeight, found, val)
-		if found {
-			fmt.Printf("Validator found: owner %s, pka %s, power %v, status %d\n", val.GetOwner(), val.GetPubKey().Address(), val.GetPower(), val.GetStatus())
-		}
-		checkHeight -= 1
+	checkHeight := int64(635325)
+	// load the given version of the state
+	err = app.LoadVersion(checkHeight, app.keyMain)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
+	//ctx := app.NewContext(true, abci.Header{})
+	res := app.DeliverTx(txn)
+	fmt.Printf("Res: %v\n", res)
+	return nil
 }
 
 func base64ToPub(b64 string) crypto.PubKeyEd25519 {
