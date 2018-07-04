@@ -165,10 +165,10 @@ func delegate(ctx sdk.Context, k Keeper, delegatorAddr sdk.Address,
 		return nil, err
 	}
 	fmt.Printf("bondAmount: %v\n", bondAmt.Amount)
-	fmt.Printf("validator.PoolShares: %v\n", validator.PoolShares)
+	fmt.Printf("validator.PoolShares: %v\n", validator.PoolShares.Amount.Evaluate())
 	validator, pool, newShares := validator.addTokensFromDel(pool, bondAmt.Amount)
 	fmt.Printf("newShares: %v\n", newShares)
-	fmt.Printf("validator.PoolShares: %v\n", validator.PoolShares)
+	fmt.Printf("validator.PoolShares: %v\n", validator.PoolShares.Amount.Evaluate())
 	bond.Shares = bond.Shares.Add(newShares)
 	fmt.Printf("bond.Shares: %v\n", bond.Shares)
 
