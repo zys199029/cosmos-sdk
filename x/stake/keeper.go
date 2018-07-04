@@ -283,6 +283,7 @@ func (k Keeper) updateValidator(ctx sdk.Context, validator Validator) Validator 
 	if cliffPower != nil &&
 		(!oldFound || (oldFound && oldValidator.Status() == sdk.Unbonded)) &&
 		bytes.Compare(valPower, cliffPower) == -1 { //(valPower < cliffPower
+		fmt.Printf("not considered because less than cliff validator\n")
 		return validator
 	}
 
