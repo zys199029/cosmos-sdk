@@ -168,6 +168,7 @@ func delegate(ctx sdk.Context, k Keeper, delegatorAddr sdk.Address,
 	validator, pool, newShares := validator.addTokensFromDel(pool, bondAmt.Amount)
 	fmt.Printf("newShares: %v\n", newShares)
 	bond.Shares = bond.Shares.Add(newShares)
+	fmt.Printf("bond.Shares: %v\n", bond.Shares)
 
 	// Update bond height
 	bond.Height = ctx.BlockHeight()

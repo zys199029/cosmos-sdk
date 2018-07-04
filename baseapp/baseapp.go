@@ -461,6 +461,10 @@ func (app *BaseApp) Deliver(tx sdk.Tx) (result sdk.Result) {
 	return app.runTx(runTxModeDeliver, nil, tx)
 }
 
+func (app *BaseApp) CheckCtx() sdk.Context {
+	return app.checkState.ctx
+}
+
 // txBytes may be nil in some cases, eg. in tests.
 // Also, in the future we may support "internal" transactions.
 func (app *BaseApp) runTx(mode runTxMode, txBytes []byte, tx sdk.Tx) (result sdk.Result) {
