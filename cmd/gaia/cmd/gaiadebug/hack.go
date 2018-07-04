@@ -85,7 +85,7 @@ func runHackCmd(cmd *cobra.Command, args []string) error {
 	//ctx := app.NewContext(true, abci.Header{})
 	res := app.DeliverTx(txn)
 	fmt.Printf("Res: %v\n", res)
-	ctx := app.CheckCtx()
+	ctx := app.DeliverCtx()
 	validator, found := app.stakeKeeper.GetValidator(ctx, trouble)
 	fmt.Printf("Validator: %v, found: %v\n", validator, found)
 	return nil
