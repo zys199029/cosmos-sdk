@@ -70,6 +70,7 @@ func GetCmdSubmitProposal(cdc *wire.Codec) *cobra.Command {
 			if err != nil {
 				return err
 			}
+
 			return nil
 		},
 	}
@@ -190,7 +191,7 @@ func GetCmdQueryProposal(storeName string, cdc *wire.Codec) *cobra.Command {
 
 			res, err := ctx.QueryStore(gov.KeyProposal(proposalID), storeName)
 			if len(res) == 0 || err != nil {
-				return errors.Errorf("proposalID [%d] is not existed", proposalID)
+				return errors.Errorf("proposalID [%d] does not exist", proposalID)
 			}
 
 			var proposal gov.Proposal
