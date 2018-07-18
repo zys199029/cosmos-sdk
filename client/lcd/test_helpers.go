@@ -15,6 +15,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 
+	"github.com/cosmos/cosmos-sdk/baseapp"
 	crkeys "github.com/cosmos/cosmos-sdk/crypto/keys"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmcfg "github.com/tendermint/tendermint/config"
@@ -92,7 +93,7 @@ func CreateAddr(t *testing.T, name, password string, kb crkeys.Keybase) (addr sd
 // strt TM and the LCD in process, listening on their respective sockets
 //   nValidators = number of validators
 //   initAddrs = accounts to initialize with some steaks
-func InitializeTestLCD(t *testing.T, nValidators int, initAddrs []sdk.AccAddress) (cleanup func(), validatorsPKs []crypto.PubKey, port string) {
+func InitializeTestLCD(t *testing.T, app *baseapp.BaseApp, handler http.Handler, nValidators int, initAddrs []sdk.AccAddress) (cleanup func(), validatorsPKs []crypto.PubKey, port string) {
 
 	config := GetConfig()
 	config.Consensus.TimeoutCommit = 100
@@ -104,9 +105,7 @@ func InitializeTestLCD(t *testing.T, nValidators int, initAddrs []sdk.AccAddress
 	privValidatorFile := config.PrivValidatorFile()
 	privVal := pvm.LoadOrGenFilePV(privValidatorFile)
 	privVal.Reset()
-	db := dbm.NewMemDB()
-	app := gapp.NewGaiaApp(logger, db, nil)
-	cdc = gapp.MakeCodec()
+	cdc = wire.NewCodec()
 
 	genesisFile := config.GenesisFile()
 	genDoc, err := tmtypes.GenesisDocFromFile(genesisFile)

@@ -5,18 +5,7 @@ import (
 	"os"
 
 	client "github.com/cosmos/cosmos-sdk/client"
-	"github.com/cosmos/cosmos-sdk/client/context"
-	keys "github.com/cosmos/cosmos-sdk/client/keys"
-	rpc "github.com/cosmos/cosmos-sdk/client/rpc"
-	tx "github.com/cosmos/cosmos-sdk/client/tx"
 	"github.com/cosmos/cosmos-sdk/wire"
-	auth "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
-	bank "github.com/cosmos/cosmos-sdk/x/bank/client/rest"
-	gov "github.com/cosmos/cosmos-sdk/x/gov/client/rest"
-	ibc "github.com/cosmos/cosmos-sdk/x/ibc/client/rest"
-	slashing "github.com/cosmos/cosmos-sdk/x/slashing/client/rest"
-	stake "github.com/cosmos/cosmos-sdk/x/stake/client/rest"
-	"github.com/gorilla/mux"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmn "github.com/tendermint/tendermint/libs/common"
@@ -27,7 +16,7 @@ import (
 // ServeCommand will generate a long-running rest server
 // (aka Light Client Daemon) that exposes functionality similar
 // to the cli, but over rest
-func ServeCommand(cdc *wire.Codec) *cobra.Command {
+func ServeCommand(cdc *wire.Codec, handler http.Handler) *cobra.Command {
 	flagListenAddr := "laddr"
 	flagCORS := "cors"
 	flagMaxOpenConnections := "max-open"
@@ -37,7 +26,6 @@ func ServeCommand(cdc *wire.Codec) *cobra.Command {
 		Short: "Start LCD (light-client daemon), a local REST server",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			listenAddr := viper.GetString(flagListenAddr)
-			handler := createHandler(cdc)
 			logger := log.NewTMLogger(log.NewSyncWriter(os.Stdout)).With("module", "rest-server")
 			maxOpen := viper.GetInt(flagMaxOpenConnections)
 
@@ -68,31 +56,4 @@ func ServeCommand(cdc *wire.Codec) *cobra.Command {
 	cmd.Flags().Int(flagMaxOpenConnections, 1000, "The number of maximum open connections")
 
 	return cmd
-}
-
-func createHandler(cdc *wire.Codec) http.Handler {
-	r := mux.NewRouter()
-
-	kb, err := keys.GetKeyBase() //XXX
-	if err != nil {
-		panic(err)
-	}
-
-	ctx := context.NewCoreContextFromViper()
-
-	// TODO: make more functional? aka r = keys.RegisterRoutes(r)
-	r.HandleFunc("/version", CLIVersionRequestHandler).Methods("GET")
-	r.HandleFunc("/node_version", NodeVersionRequestHandler(ctx)).Methods("GET")
-
-	keys.RegisterRoutes(r)
-	rpc.RegisterRoutes(ctx, r)
-	tx.RegisterRoutes(ctx, r, cdc)
-	auth.RegisterRoutes(ctx, r, cdc, "acc")
-	bank.RegisterRoutes(ctx, r, cdc, kb)
-	ibc.RegisterRoutes(ctx, r, cdc, kb)
-	stake.RegisterRoutes(ctx, r, cdc, kb)
-	slashing.RegisterRoutes(ctx, r, cdc, kb)
-	gov.RegisterRoutes(ctx, r, cdc)
-
-	return r
 }

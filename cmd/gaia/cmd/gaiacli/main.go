@@ -70,7 +70,7 @@ func main() {
 	advancedCmd.AddCommand(
 		tendermintCmd,
 		ibcCmd,
-		lcd.ServeCommand(cdc),
+		lcd.ServeCommand(cdc, createHandler(cdc)),
 	)
 	rootCmd.AddCommand(
 		advancedCmd,
