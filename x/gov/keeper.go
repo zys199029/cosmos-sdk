@@ -12,10 +12,10 @@ type Keeper struct {
 	ck bank.Keeper
 
 	// The ValidatorSet to get information about validators
-	vs sdk.ValidatorSet
+	vs ValidatorSet
 
 	// The reference to the DelegationSet to get information about delegators
-	ds sdk.DelegationSet
+	ds DelegationSet
 
 	// The (unexposed) keys used to access the stores from the Context.
 	storeKey sdk.StoreKey
@@ -28,7 +28,7 @@ type Keeper struct {
 }
 
 // NewGovernanceMapper returns a mapper that uses go-wire to (binary) encode and decode gov types.
-func NewKeeper(cdc *wire.Codec, key sdk.StoreKey, ck bank.Keeper, ds sdk.DelegationSet, codespace sdk.CodespaceType) Keeper {
+func NewKeeper(cdc *wire.Codec, key sdk.StoreKey, ck bank.Keeper, ds DelegationSet, codespace sdk.CodespaceType) Keeper {
 	return Keeper{
 		storeKey:  key,
 		ck:        ck,

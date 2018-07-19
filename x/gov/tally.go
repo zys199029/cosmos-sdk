@@ -23,7 +23,7 @@ func tally(ctx sdk.Context, keeper Keeper, proposal Proposal) (passes bool, nonV
 	totalVotingPower := sdk.ZeroRat()
 	currValidators := make(map[string]validatorGovInfo)
 
-	keeper.vs.IterateValidatorsBonded(ctx, func(index int64, validator sdk.Validator) (stop bool) {
+	keeper.vs.IterateValidatorsBonded(ctx, func(index int64, validator Validator) (stop bool) {
 		currValidators[validator.GetOwner().String()] = validatorGovInfo{
 			Address:         validator.GetOwner(),
 			Power:           validator.GetPower(),
@@ -47,7 +47,7 @@ func tally(ctx sdk.Context, keeper Keeper, proposal Proposal) (passes bool, nonV
 			currValidators[vote.Voter.String()] = val
 		} else {
 
-			keeper.ds.IterateDelegations(ctx, vote.Voter, func(index int64, delegation sdk.Delegation) (stop bool) {
+			keeper.ds.IterateDelegations(ctx, vote.Voter, func(index int64, delegation Delegation) (stop bool) {
 				val := currValidators[delegation.GetValidator().String()]
 				val.Minus = val.Minus.Add(delegation.GetBondShares())
 				currValidators[delegation.GetValidator().String()] = val

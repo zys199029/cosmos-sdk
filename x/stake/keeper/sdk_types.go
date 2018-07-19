@@ -1,90 +1,60 @@
 package keeper
 
 import (
-	"fmt"
+	"errors"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/stake/types"
 )
 
-// Implements ValidatorSet
-var _ sdk.ValidatorSet = Keeper{}
-
 // iterate through the active validator set and perform the provided function
-func (k Keeper) IterateValidators(ctx sdk.Context, fn func(index int64, validator sdk.Validator) (stop bool)) {
+func (k Keeper) GetValidatorOwnerAddresses(ctx sdk.Context) (ownerAddresses []sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, ValidatorsKey)
-	i := int64(0)
 	for ; iterator.Valid(); iterator.Next() {
-		addr := iterator.Key()[1:]
-		validator := types.MustUnmarshalValidator(k.cdc, addr, iterator.Value())
-		stop := fn(i, validator) // XXX is this safe will the validator unexposed fields be able to get written to?
-		if stop {
-			break
-		}
-		i++
+		ownerAddresses = append(ownerAddresses, sdk.AccAddress(iterator.Key()[1:]))
 	}
 	iterator.Close()
+	return
 }
 
 // iterate through the active validator set and perform the provided function
-func (k Keeper) IterateValidatorsBonded(ctx sdk.Context, fn func(index int64, validator sdk.Validator) (stop bool)) {
+func (k Keeper) GetBondedValidatorOwnerAddresses(ctx sdk.Context) (ownerAddresses []sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, ValidatorsBondedIndexKey)
-	i := int64(0)
 	for ; iterator.Valid(); iterator.Next() {
-		address := GetAddressFromValBondedIndexKey(iterator.Key())
-		validator, found := k.GetValidator(ctx, address)
-		if !found {
-			panic(fmt.Sprintf("validator record not found for address: %v\n", address))
-		}
-
-		stop := fn(i, validator) // XXX is this safe will the validator unexposed fields be able to get written to?
-		if stop {
-			break
-		}
-		i++
+		ownerAddresses = append(ownerAddresses, GetAddressFromValBondedIndexKey(iterator.Key()))
 	}
 	iterator.Close()
+	return
 }
 
 // get the sdk.validator for a particular address
-func (k Keeper) Validator(ctx sdk.Context, address sdk.AccAddress) sdk.Validator {
+func (k Keeper) Validator(ctx sdk.Context, address sdk.AccAddress) (types.Validator, error) {
 	val, found := k.GetValidator(ctx, address)
 	if !found {
-		return nil
+		return types.Validator{}, error.Error("validator now found")
 	}
 	return val
 }
 
 // total power from the bond
-func (k Keeper) TotalPower(ctx sdk.Context) sdk.Rat {
+func (k Keeper) GetTotalPower(ctx sdk.Context) sdk.Rat {
 	pool := k.GetPool(ctx)
 	return pool.BondedTokens
 }
 
-//__________________________________________________________________________
-
-// Implements DelegationSet
-
-var _ sdk.DelegationSet = Keeper{}
-
-// Returns self as it is both a validatorset and delegationset
-func (k Keeper) GetValidatorSet() sdk.ValidatorSet {
-	return k
-}
-
 // get the delegation for a particular set of delegator and validator addresses
-func (k Keeper) Delegation(ctx sdk.Context, addrDel sdk.AccAddress, addrVal sdk.AccAddress) sdk.Delegation {
+func (k Keeper) Delegation(ctx sdk.Context, addrDel sdk.AccAddress, addrVal sdk.AccAddress) (types.Delegation, error) {
 	bond, ok := k.GetDelegation(ctx, addrDel, addrVal)
 	if !ok {
-		return nil
+		return types.Delegation{}, errors.New("Could not find delegation")
 	}
-	return bond
+	return bond, nil
 }
 
 // iterate through the active validator set and perform the provided function
-func (k Keeper) IterateDelegations(ctx sdk.Context, delAddr sdk.AccAddress, fn func(index int64, delegation sdk.Delegation) (stop bool)) {
+func (k Keeper) IterateDelegations(ctx sdk.Context, delAddr sdk.AccAddress, fn func(index int64, delegation types.Delegation) (stop bool)) {
 	store := ctx.KVStore(k.storeKey)
 	key := GetDelegationsKey(delAddr)
 	iterator := sdk.KVStorePrefixIterator(store, key)
