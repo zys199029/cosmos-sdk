@@ -5,6 +5,7 @@ import (
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/x/stake/types"
+	"github.com/tendermint/tendermint/crypto"
 )
 
 // iterate through the active validator set and perform the provided function
@@ -29,43 +30,102 @@ func (k Keeper) GetBondedValidatorOwnerAddresses(ctx sdk.Context) (ownerAddresse
 	return
 }
 
-// get the sdk.validator for a particular address
-func (k Keeper) Validator(ctx sdk.Context, address sdk.AccAddress) (types.Validator, error) {
+// returns whether or not a validator is revoked
+func (k Keeper) ValidatorIsRevoked(ctx sdk.Context, address sdk.AccAddress) (bool, error) {
 	val, found := k.GetValidator(ctx, address)
 	if !found {
-		return types.Validator{}, error.Error("validator now found")
+		return false, errors.New("validator not found")
 	}
-	return val
+	return val.GetRevoked(), nil
 }
 
-// total power from the bond
+// returns a validator's moniker
+func (k Keeper) GetValidatorMoniker(ctx sdk.Context, address sdk.AccAddress) (string, error) {
+	val, found := k.GetValidator(ctx, address)
+	if !found {
+		return "", errors.New("validator not found")
+	}
+	return val.GetMoniker(), nil
+}
+
+// returns a validator's status
+func (k Keeper) GetValidatorStatus(ctx sdk.Context, address sdk.AccAddress) (sdk.BondStatus, error) {
+	val, found := k.GetValidator(ctx, address)
+	if !found {
+		return 0xff, errors.New("validator not found")
+	}
+	return val.GetStatus(), nil
+}
+
+// returns a validator's pubkey
+func (k Keeper) GetValidatorPubKey(ctx sdk.Context, address sdk.AccAddress) (crypto.PubKey, error) {
+	val, found := k.GetValidator(ctx, address)
+	if !found {
+		return nil, errors.New("validator not found")
+	}
+	return val.GetPubKey(), nil
+}
+
+// returns a validator's power
+func (k Keeper) GetValidatorPower(ctx sdk.Context, address sdk.AccAddress) (sdk.Rat, error) {
+	val, found := k.GetValidator(ctx, address)
+	if !found {
+		return sdk.ZeroRat(), errors.New("validator not found")
+	}
+	return val.GetPower(), nil
+}
+
+// Total out standing delegator shares
+func (k Keeper) GetValidatorTotalDelegationShares(ctx sdk.Context, address sdk.AccAddress) (sdk.Rat, error) {
+	val, found := k.GetValidator(ctx, address)
+	if !found {
+		return sdk.ZeroRat(), errors.New("validator not found")
+	}
+	return val.GetDelegatorShares(), nil
+}
+
+// height in which the validator became active
+func (k Keeper) GetValidatorBondHeight(ctx sdk.Context, address sdk.AccAddress) (int64, error) {
+	val, found := k.GetValidator(ctx, address)
+	if !found {
+		return 0, errors.New("validator not found")
+	}
+	return val.GetBondHeight(), nil
+}
+
+// total voting power
 func (k Keeper) GetTotalPower(ctx sdk.Context) sdk.Rat {
 	pool := k.GetPool(ctx)
 	return pool.BondedTokens
 }
 
-// get the delegation for a particular set of delegator and validator addresses
-func (k Keeper) Delegation(ctx sdk.Context, addrDel sdk.AccAddress, addrVal sdk.AccAddress) (types.Delegation, error) {
-	bond, ok := k.GetDelegation(ctx, addrDel, addrVal)
+// Returns the shares that a delegator has in a certain validator pool
+func (k Keeper) GetDelegatorDelegationShares(ctx sdk.Context, delegatorAddress sdk.AccAddress, validatorAddress sdk.AccAddress) (sdk.Rat, error) {
+	bond, ok := k.GetDelegation(ctx, delegatorAddress, validatorAddress)
 	if !ok {
-		return types.Delegation{}, errors.New("Could not find delegation")
+		return sdk.ZeroRat(), errors.New("Could not find delegation")
 	}
-	return bond, nil
+	return bond.GetBondShares(), nil
 }
 
-// iterate through the active validator set and perform the provided function
-func (k Keeper) IterateDelegations(ctx sdk.Context, delAddr sdk.AccAddress, fn func(index int64, delegation types.Delegation) (stop bool)) {
+// Returns the shares that a delegator has in a certain validator pool
+func (k Keeper) GetDelegatorDelegationHeight(ctx sdk.Context, delegatorAddress sdk.AccAddress, validatorAddress sdk.AccAddress) (int64, error) {
+	bond, ok := k.GetDelegation(ctx, delegatorAddress, validatorAddress)
+	if !ok {
+		return -1, errors.New("Could not find delegation")
+	}
+	return bond.Height, nil
+}
+
+// Returns a slice of all the validator addresses that a certain delegator is delegated to
+func (k Keeper) IterateDelegatorDelegations(ctx sdk.Context, delAddr sdk.AccAddress) (validatorAddresses []sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 	key := GetDelegationsKey(delAddr)
 	iterator := sdk.KVStorePrefixIterator(store, key)
-	i := int64(0)
 	for ; iterator.Valid(); iterator.Next() {
 		delegation := types.MustUnmarshalDelegation(k.cdc, iterator.Key(), iterator.Value())
-		stop := fn(i, delegation) // XXX is this safe will the fields be able to get written to?
-		if stop {
-			break
-		}
-		i++
+		validatorAddresses = append(validatorAddresses, delegation.ValidatorAddr)
 	}
 	iterator.Close()
+	return
 }
