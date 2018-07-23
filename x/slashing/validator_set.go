@@ -1,4 +1,4 @@
-package gov
+package slashing
 
 import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -19,5 +19,6 @@ type DelegationSet interface {
 
 	// slash the validator and delegators of the validator, specifying offence height, offence power, and slash fraction
 	Slash(sdk.Context, crypto.PubKey, int64, int64, sdk.Rat)
-	Revoke(sdk.Context, crypto.PubKey) // revoke a validator
+	Revoke(sdk.Context, crypto.PubKey)   // revoke a validator
+	Unrevoke(sdk.Context, crypto.PubKey) // unrevoke a validator
 }

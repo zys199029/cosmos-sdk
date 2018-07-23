@@ -9,7 +9,7 @@ import (
 )
 
 // iterate through the active validator set and perform the provided function
-func (k Keeper) GetValidatorOwnerAddresses(ctx sdk.Context) (ownerAddresses []sdk.AccAddress) {
+func (k Keeper) GetAllValidatorOwnerAddresses(ctx sdk.Context) (ownerAddresses []sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 	iterator := sdk.KVStorePrefixIterator(store, ValidatorsKey)
 	for ; iterator.Valid(); iterator.Next() {

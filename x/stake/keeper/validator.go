@@ -133,6 +133,27 @@ func (k Keeper) GetValidatorsBonded(ctx sdk.Context) (validators []types.Validat
 	return validators[:i] // trim
 }
 
+// iterate through the active validator set and perform the provided function
+func (k Keeper) IterateValidatorsBonded(ctx sdk.Context, fn func(index int64, validator types.Validator) (stop bool)) {
+	store := ctx.KVStore(k.storeKey)
+	iterator := sdk.KVStorePrefixIterator(store, ValidatorsBondedIndexKey)
+	i := int64(0)
+	for ; iterator.Valid(); iterator.Next() {
+		address := GetAddressFromValBondedIndexKey(iterator.Key())
+		validator, found := k.GetValidator(ctx, address)
+		if !found {
+			panic(fmt.Sprintf("validator record not found for address: %v\n", address))
+		}
+
+		stop := fn(i, validator) // XXX is this safe will the validator unexposed fields be able to get written to?
+		if stop {
+			break
+		}
+		i++
+	}
+	iterator.Close()
+}
+
 // get the group of bonded validators sorted by power-rank
 func (k Keeper) GetValidatorsByPower(ctx sdk.Context) []types.Validator {
 	store := ctx.KVStore(k.storeKey)
