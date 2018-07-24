@@ -29,6 +29,8 @@ func NewHandler(k Keeper) sdk.Handler {
 				switch p := msg.Payload.(type) {
 				case PayloadCoins:
 					return handlePayloadCoinsReceive(ctx, k, p)
+				case PayloadCoinsReceipt:
+					return handlePayloadCoinsReceiptReceive(ctx, k, p)
 				default:
 					return nil, unknownRequest("Unrecognized ibc/bank payload type: ", p)
 				}
@@ -52,7 +54,14 @@ func handlePayloadCoinsSend(ctx sdk.Context, k Keeper, p PayloadCoins) sdk.Resul
 func handlePayloadCoinsReceive(ctx sdk.Context, k Keeper, p PayloadCoins) (ibc.Payload, sdk.Result) {
 	_, tags, err := k.bk.AddCoins(ctx, p.DestAddr, p.Coins)
 	if err != nil {
-		return PayloadCoinsFail{p}, err.Result()
+		return PayloadCoinsReceipt{p, false}, err.Result()
 	}
-	return nil, sdk.Result{Tags: tags}
+	return PayloadCoinsReceipt{p, true}, sdk.Result{Tags: tags}
+}
+
+func handlePayloadCoinsReceiptReceive(ctx sdk.Context, k Keeper, p PayloadCoinsReceipt) (_ ibc.Payload, _ sdk.Result) {
+	if !p.Success {
+		k.bk.AddCoins(ctx, p.SrcAddr, p.Coins)
+	}
+	return
 }

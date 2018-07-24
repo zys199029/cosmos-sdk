@@ -34,10 +34,11 @@ func (p PayloadCoins) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{p.SrcAddr}
 }
 
-type PayloadCoinsFail struct {
+type PayloadCoinsReceipt struct {
 	PayloadCoins
+	Success bool
 }
 
-func (p PayloadCoinsFail) DatagramType() ibc.DatagramType {
+func (p PayloadCoinsReceipt) DatagramType() ibc.DatagramType {
 	return ibc.ReceiptType
 }

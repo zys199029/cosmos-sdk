@@ -46,25 +46,6 @@ type Proof struct {
 	Sequence uint64
 }
 
-// ----------------------------------------
-// Helper Types
-
-type ReceiptSuccess struct {
-	Payload
-}
-
-func (r ReceiptSuccess) DatagramType() DatagramType {
-	return ReceiptType
-}
-
-type ReceiptFail struct {
-	Payload
-}
-
-func (r ReceiptFail) DatagramType() DatagramType {
-	return ReceiptType
-}
-
 // -------------------------------------------
 // Store Accessors
 
