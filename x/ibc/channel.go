@@ -9,18 +9,6 @@ import (
 // ------------------------------------------
 // Type Definitions
 
-type Channel struct {
-	k   Keeper
-	key sdk.KVStoreGetter
-}
-
-func (k Keeper) Channel(key sdk.KVStoreGetter) Channel {
-	return Channel{
-		k:   k,
-		key: key,
-	}
-}
-
 type DatagramType byte
 
 const (
@@ -100,20 +88,18 @@ func incomingSequence(store sdk.KVStore, cdc *wire.Codec, ty DatagramType, chain
 // Channel Runtime
 
 type channelRuntime struct {
-	ch               Channel
+	k                Keeper
 	outgoingQueue    lib.Queue
 	incomingSequence lib.Value
 	thisChain        string
 	thatChain        string
 }
 
-func (ch Channel) runtime(ctx sdk.Context, ty DatagramType, thatChain string) channelRuntime {
-	store := ctx.KVStore(ch.k.key)
-
+func (k Keeper) channelRuntime(ctx sdk.Context, store sdk.KVStore, ty DatagramType, thatChain string) channelRuntime {
 	return channelRuntime{
-		ch:               ch,
-		outgoingQueue:    outgoingQueue(store, ch.k.cdc, ty, thatChain),
-		incomingSequence: incomingSequence(store, ch.k.cdc, ty, thatChain),
+		k:                k,
+		outgoingQueue:    outgoingQueue(store, k.cdc, ty, thatChain),
+		incomingSequence: incomingSequence(store, k.cdc, ty, thatChain),
 		thisChain:        ctx.ChainID(),
 		thatChain:        thatChain,
 	}

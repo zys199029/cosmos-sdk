@@ -123,19 +123,18 @@ func newIBCTestApp(logger log.Logger, db dbm.DB) *bam.BaseApp {
 
 func remoteSaveHandler(key sdk.StoreKey, ibck Keeper) sdk.Handler {
 	return func(ctx sdk.Context, msg sdk.Msg) sdk.Result {
-		ibcc := ibck.Channel(sdk.NewPrefixStoreGetter(key, []byte("ibctest")))
 		switch msg := msg.(type) {
 		case MsgSend:
-			return ibcc.Send(func(p Payload) sdk.Result {
+			return ibck.Send(func(p Payload) sdk.Result {
 				switch p := p.(type) {
 				case remoteSavePayload:
 					return handleRemoteSavePayloadSend(p)
 				default:
 					return sdk.ErrUnknownRequest("").Result()
 				}
-			}, ctx, msg)
+			}, ctx, ctx.KVStore(key).Prefix([]byte{0x00}), msg)
 		case MsgReceive:
-			return ibcc.Receive(func(ctx sdk.Context, p Payload) (Payload, sdk.Result) {
+			return ibck.Receive(func(ctx sdk.Context, p Payload) (Payload, sdk.Result) {
 				switch p := p.(type) {
 				case remoteSavePayload:
 					return handleRemoteSavePayloadReceive(ctx, key, p)
@@ -144,7 +143,7 @@ func remoteSaveHandler(key sdk.StoreKey, ibck Keeper) sdk.Handler {
 				default:
 					return nil, sdk.ErrUnknownRequest("").Result()
 				}
-			}, ctx, msg)
+			}, ctx, ctx.KVStore(key).Prefix([]byte{0x00}), msg)
 			/*
 				case MsgCleanup:
 					return ibcc.Cleanup()

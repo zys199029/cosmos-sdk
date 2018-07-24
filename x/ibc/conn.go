@@ -56,7 +56,7 @@ type connRuntime struct {
 	commits lib.List
 }
 
-func (k Keeper) runtime(ctx sdk.Context, srcChain string) connRuntime {
+func (k Keeper) connRuntime(ctx sdk.Context, srcChain string) connRuntime {
 	store := ctx.KVStore(k.key)
 	return connRuntime{
 		k:       k,

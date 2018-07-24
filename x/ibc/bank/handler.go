@@ -16,16 +16,16 @@ func NewHandler(k Keeper) sdk.Handler {
 	return func(ctx sdk.Context, msg sdk.Msg) sdk.Result {
 		switch msg := msg.(type) {
 		case ibc.MsgSend:
-			return k.ch.Send(func(p ibc.Payload) sdk.Result {
+			return k.ibck.Send(func(p ibc.Payload) sdk.Result {
 				switch p := msg.Payload.(type) {
 				case PayloadCoins:
 					return handlePayloadCoinsSend(ctx, k, p)
 				default:
 					return unknownRequest("Unrecognized ibc/bank payload type: ", p)
 				}
-			}, ctx, msg)
+			}, ctx, k.ibcStore(ctx), msg)
 		case ibc.MsgReceive:
-			return k.ch.Receive(func(ctx sdk.Context, p ibc.Payload) (ibc.Payload, sdk.Result) {
+			return k.ibck.Receive(func(ctx sdk.Context, p ibc.Payload) (ibc.Payload, sdk.Result) {
 				switch p := msg.Payload.(type) {
 				case PayloadCoins:
 					return handlePayloadCoinsReceive(ctx, k, p)
@@ -33,7 +33,7 @@ func NewHandler(k Keeper) sdk.Handler {
 					return nil, unknownRequest("Unrecognized ibc/bank payload type: ", p)
 				}
 
-			}, ctx, msg)
+			}, ctx, k.ibcStore(ctx), msg)
 		// case ibc.MsgRelay
 		default:
 			return unknownRequest("Unrecognized ibc/bank Msg type: ", msg)

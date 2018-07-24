@@ -10,14 +10,21 @@ import (
 const DefaultCodespace = 65534
 
 type Keeper struct {
-	bk bank.Keeper
-	ch ibc.Channel
+	key sdk.StoreKey
+
+	bk   bank.Keeper
+	ibck ibc.Keeper
 }
 
 func NewKeeper(key sdk.StoreKey, bk bank.Keeper, ibck ibc.Keeper) Keeper {
 	return Keeper{
-		bk: bk,
-		// Prefixing for the future compatibility
-		ch: ibck.Channel(sdk.NewPrefixStoreGetter(key, []byte{0x00})),
+		key:  key,
+		bk:   bk,
+		ibck: ibck,
 	}
+}
+
+func (k Keeper) ibcStore(ctx sdk.Context) sdk.KVStore {
+	// Prefixing for future compatability
+	return ctx.KVStore(k.key).Prefix([]byte{0x00})
 }

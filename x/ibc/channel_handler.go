@@ -6,9 +6,9 @@ import (
 
 type SendHandler func(Payload) sdk.Result
 
-func (ch Channel) Send(h SendHandler, ctx sdk.Context, msg MsgSend) (result sdk.Result) {
+func (k Keeper) Send(h SendHandler, ctx sdk.Context, store sdk.KVStore, msg MsgSend) (result sdk.Result) {
 	payload := msg.Payload
-	r := ch.runtime(ctx, payload.DatagramType(), msg.DestChain)
+	r := k.channelRuntime(ctx, store, payload.DatagramType(), msg.DestChain)
 
 	// TODO: check validity of the payload; the module have to be permitted to send the payload
 	result = h(msg.Payload)
@@ -30,29 +30,29 @@ func (ch Channel) Send(h SendHandler, ctx sdk.Context, msg MsgSend) (result sdk.
 
 type ReceiveHandler func(sdk.Context, Payload) (Payload, sdk.Result)
 
-func (ch Channel) Receive(h ReceiveHandler, ctx sdk.Context, msg MsgReceive) (res sdk.Result) {
+func (k Keeper) Receive(h ReceiveHandler, ctx sdk.Context, store sdk.KVStore, msg MsgReceive) (res sdk.Result) {
 	data := msg.Datagram
 	payload := data.Payload
 	ty := payload.DatagramType()
-	chr := ch.runtime(ctx, ty, msg.SrcChain)
-	connr := ch.k.runtime(ctx, msg.SrcChain)
+	chr := k.channelRuntime(ctx, store, ty, msg.SrcChain)
+	connr := k.connRuntime(ctx, msg.SrcChain)
 
 	prf := msg.Proof
 	destChain := msg.Datagram.Header.DestChain
 
 	if !connr.connEstablished() {
-		return ErrConnectionNotEstablished(ch.k.codespace).Result()
+		return ErrConnectionNotEstablished(k.codespace).Result()
 	}
 
 	if ctx.ChainID() != destChain {
-		return ErrChainMismatch(ch.k.codespace).Result()
+		return ErrChainMismatch(k.codespace).Result()
 	}
 
 	// TODO: verify merkle proof
 
 	seq := chr.getIncomingSequence()
 	if seq != prf.Sequence {
-		return ErrInvalidSequence(ch.k.codespace).Result()
+		return ErrInvalidSequence(k.codespace).Result()
 	}
 	chr.setIncomingSequence(seq + 1)
 
@@ -63,7 +63,7 @@ func (ch Channel) Receive(h ReceiveHandler, ctx sdk.Context, msg MsgReceive) (re
 		return receiveReceipt(h, ctx, chr, data)
 	default:
 		// Source zone sent invalid datagram, reorg needed
-		return ErrUnknownDatagramType(ch.k.codespace).Result()
+		return ErrUnknownDatagramType(k.codespace).Result()
 	}
 }
 
