@@ -9,7 +9,7 @@ import (
 // Handler handles payload after it passes voting process
 type Handler func(ctx sdk.Context, p Payload) sdk.Error
 
-func (keeper Keeper) update(ctx sdk.Context, val sdk.Validator, valset sdk.ValidatorSet, p Payload, info Info) Info {
+func (keeper Keeper) update(ctx sdk.Context, val Validator, valset ValidatorSet, p Payload, info Info) Info {
 	info.Power = info.Power.Add(val.GetPower())
 
 	// Return if the voted power is not bigger than required power
@@ -66,12 +66,6 @@ func (keeper Keeper) Handle(h Handler, ctx sdk.Context, o Msg, codespace sdk.Cod
 		return sdk.Result{}
 	}
 	info.LastSigned = ctx.BlockHeight()
-
-	// Check the signer is a validater
-	val := valset.Validator(ctx, signer)
-	if val == nil {
-		return ErrNotValidator(codespace, signer).Result()
-	}
 
 	// Check double signing
 	if keeper.signed(ctx, payload, signer) {

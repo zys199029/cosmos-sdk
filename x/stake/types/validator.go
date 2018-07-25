@@ -396,9 +396,6 @@ func (v Validator) BondedTokens() sdk.Rat {
 
 //______________________________________________________________________
 
-// ensure fulfills the sdk validator types
-var _ sdk.Validator = Validator{}
-
 // nolint - for sdk.Validator
 func (v Validator) GetRevoked() bool            { return v.Revoked }
 func (v Validator) GetMoniker() string          { return v.Description.Moniker }

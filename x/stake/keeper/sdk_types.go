@@ -118,7 +118,7 @@ func (k Keeper) GetDelegatorDelegationHeight(ctx sdk.Context, delegatorAddress s
 }
 
 // Returns a slice of all the validator addresses that a certain delegator is delegated to
-func (k Keeper) IterateDelegatorDelegations(ctx sdk.Context, delAddr sdk.AccAddress) (validatorAddresses []sdk.AccAddress) {
+func (k Keeper) GetDelegatorDelegations(ctx sdk.Context, delAddr sdk.AccAddress) (validatorAddresses []sdk.AccAddress) {
 	store := ctx.KVStore(k.storeKey)
 	key := GetDelegationsKey(delAddr)
 	iterator := sdk.KVStorePrefixIterator(store, key)

@@ -20,17 +20,16 @@ func NewHandler(k Keeper) sdk.Handler {
 // having been revoked (and thus unbonded) for downtime
 func handleMsgUnrevoke(ctx sdk.Context, msg MsgUnrevoke, k Keeper) sdk.Result {
 
-	// Validator must exist
-	validator := k.validatorSet.Validator(ctx, msg.ValidatorAddr)
-	if validator == nil {
+	isRevoked, err := k.validatorSet.ValidatorIsRevoked(ctx, msg.ValidatorAddr)
+	if err != nil {
 		return ErrNoValidatorForAddress(k.codespace).Result()
 	}
-
-	if !validator.GetRevoked() {
+	if !isRevoked {
 		return ErrValidatorNotRevoked(k.codespace).Result()
 	}
 
-	addr := sdk.ValAddress(validator.GetPubKey().Address())
+	valPubKey, _ := k.validatorSet.GetValidatorPubKey(ctx, msg.ValidatorAddr)
+	addr := sdk.ValAddress(valPubKey.Address())
 
 	// Signing info must exist
 	info, found := k.getValidatorSigningInfo(ctx, addr)
@@ -52,7 +51,7 @@ func handleMsgUnrevoke(ctx sdk.Context, msg MsgUnrevoke, k Keeper) sdk.Result {
 	k.setValidatorSigningInfo(ctx, addr, info)
 
 	// Unrevoke the validator
-	k.validatorSet.Unrevoke(ctx, validator.GetPubKey())
+	k.validatorSet.Unrevoke(ctx, valPubKey)
 
 	tags := sdk.NewTags("action", []byte("unrevoke"), "validator", []byte(msg.ValidatorAddr.String()))
 

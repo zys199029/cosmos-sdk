@@ -23,16 +23,17 @@ func tally(ctx sdk.Context, keeper Keeper, proposal Proposal) (passes bool, nonV
 	totalVotingPower := sdk.ZeroRat()
 	currValidators := make(map[string]validatorGovInfo)
 
-	keeper.vs.IterateValidatorsBonded(ctx, func(index int64, validator Validator) (stop bool) {
-		currValidators[validator.GetOwner().String()] = validatorGovInfo{
-			Address:         validator.GetOwner(),
-			Power:           validator.GetPower(),
-			DelegatorShares: validator.GetDelegatorShares(),
+	for _, valAddr := range keeper.ds.GetBondedValidatorOwnerAddresses(ctx) {
+		power, _ := keeper.ds.GetValidatorPower(ctx, valAddr)
+		delegatorShares, _ := keeper.ds.GetValidatorTotalDelegationShares(ctx, valAddr)
+		currValidators[valAddr.String()] = validatorGovInfo{
+			Address:         valAddr,
+			Power:           power,
+			DelegatorShares: delegatorShares,
 			Minus:           sdk.ZeroRat(),
 			Vote:            OptionEmpty,
 		}
-		return false
-	})
+	}
 
 	// iterate over all the votes
 	votesIterator := keeper.GetVotes(ctx, proposal.GetProposalID())
@@ -47,19 +48,19 @@ func tally(ctx sdk.Context, keeper Keeper, proposal Proposal) (passes bool, nonV
 			currValidators[vote.Voter.String()] = val
 		} else {
 
-			keeper.ds.IterateDelegations(ctx, vote.Voter, func(index int64, delegation Delegation) (stop bool) {
-				val := currValidators[delegation.GetValidator().String()]
-				val.Minus = val.Minus.Add(delegation.GetBondShares())
-				currValidators[delegation.GetValidator().String()] = val
+			for _, valAddr := range keeper.ds.GetDelegatorDelegations(ctx, vote.Voter) {
+				if val, ok := currValidators[valAddr.String()]; ok {
+					bondShares, _ := keeper.ds.GetDelegatorDelegationShares(ctx, vote.Voter, val.Address)
+					val.Minus = val.Minus.Add(bondShares)
+					currValidators[valAddr.String()] = val
 
-				delegatorShare := delegation.GetBondShares().Quo(val.DelegatorShares)
-				votingPower := val.Power.Mul(delegatorShare)
+					votingPower := bondShares.Quo(val.DelegatorShares).Mul(val.Power)
+					results[vote.Option] = results[vote.Option].Add(votingPower)
+					totalVotingPower = totalVotingPower.Add(votingPower)
 
-				results[vote.Option] = results[vote.Option].Add(votingPower)
-				totalVotingPower = totalVotingPower.Add(votingPower)
+				}
 
-				return false
-			})
+			}
 		}
 
 		keeper.deleteVote(ctx, vote.ProposalID, vote.Voter)

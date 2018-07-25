@@ -11,10 +11,7 @@ type Keeper struct {
 	// The reference to the CoinKeeper to modify balances
 	ck bank.Keeper
 
-	// The ValidatorSet to get information about validators
-	vs ValidatorSet
-
-	// The reference to the DelegationSet to get information about delegators
+	// The reference to the DelegationSet to get information about validators and delegators
 	ds DelegationSet
 
 	// The (unexposed) keys used to access the stores from the Context.
@@ -33,7 +30,6 @@ func NewKeeper(cdc *wire.Codec, key sdk.StoreKey, ck bank.Keeper, ds DelegationS
 		storeKey:  key,
 		ck:        ck,
 		ds:        ds,
-		vs:        ds.GetValidatorSet(),
 		cdc:       cdc,
 		codespace: codespace,
 	}
