@@ -1,8 +1,10 @@
 package lcd
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"regexp"
 	"testing"
@@ -380,86 +382,102 @@ func TestValidatorQuery(t *testing.T) {
 	assert.Equal(t, validator.Owner, validator1Owner, "The returned validator does not hold the correct data")
 }
 
+// Request makes a test LCD test request. It returns a response object and a
+// stringified response body.
+func Request2(t *testing.T, port, method, path string, payload []byte) (*http.Response, string) {
+	var (
+		err error
+		res *http.Response
+	)
+	url := fmt.Sprintf("http://localhost:%v%v", port, path)
+	fmt.Println("REQUEST " + method + " " + url)
+
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(payload))
+	require.Nil(t, err)
+
+	res, err = http.DefaultClient.Do(req)
+	require.Nil(t, err)
+
+	output, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	require.Nil(t, err)
+
+	return res, string(output)
+}
+
 func TestBonding(t *testing.T) {
-	name, password, denom := "test", "1234567890", "steak"
-	addr, seed := CreateAddr(t, name, password, GetKeyBase(t))
+	name, password := "test", "1234567890"
+	addr, _ := CreateAddr(t, name, password, GetKeyBase(t))
 	cleanup, pks, port := InitializeTestLCD(t, 1, []sdk.AccAddress{addr})
 	defer cleanup()
 
 	validator1Owner := sdk.AccAddress(pks[0].Address())
-	validator := getValidator(t, port, validator1Owner)
 
-	resultTx := doDelegate(t, port, seed, name, password, addr, validator1Owner, 60)
+	delegatorAddr := addr
+	validatorAddr := validator1Owner
+	amount := 60
+
+	acc := getAccount(t, port, delegatorAddr)
+	accnum := acc.GetAccountNumber()
+	sequence := acc.GetSequence()
+	chainID := viper.GetString(client.FlagChainID)
+
+	jsonStr := []byte(fmt.Sprintf(`{
+			"name": "%s",
+			"password": "%s",
+			"account_number": "%d",
+			"sequence": "%d",
+			"gas": "10000",
+			"chain_id": "%s",
+			"delegations": [
+				{
+					"delegator_addr": "%s",
+					"validator_addr": "%s",
+					"delegation": { "denom": "%s", "amount": "%d" }
+				}
+			],
+			"begin_unbondings": [],
+			"complete_unbondings": [],
+			"begin_redelegates": [],
+			"complete_redelegates": []
+		}`, name, password, accnum, sequence, chainID, delegatorAddr, validatorAddr, "steak", amount))
+
+	method := "POST"
+	path := fmt.Sprintf("/stake/delegators/%s/delegations", delegatorAddr)
+	payload := jsonStr
+
+	var (
+		err error
+		res *http.Response
+	)
+	url := fmt.Sprintf("http://localhost:%v%v", port, path)
+	fmt.Println("REQUEST " + method + " " + url)
+
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(payload))
+	require.Nil(t, err)
+
+	res, err = http.DefaultClient.Do(req)
+	require.Nil(t, err)
+
+	output, err := ioutil.ReadAll(res.Body)
+	res.Body.Close()
+	require.Nil(t, err)
+
+	res, body := res, string(output)
+
+	require.Equal(t, http.StatusOK, res.StatusCode, body)
+
+	var results []ctypes.ResultBroadcastTxCommit
+	err = cdc.UnmarshalJSON([]byte(body), &results)
+	require.Nil(t, err)
+
+	resultTx := results[0]
 	tests.WaitForHeight(resultTx.Height+1, port)
-
-	require.Equal(t, uint32(0), resultTx.CheckTx.Code)
-	require.Equal(t, uint32(0), resultTx.DeliverTx.Code)
-
-	acc := getAccount(t, port, addr)
-	coins := acc.GetCoins()
-
-	require.Equal(t, int64(40), coins.AmountOf(denom).Int64())
-
-	bond := getDelegation(t, port, addr, validator1Owner)
-	require.Equal(t, "60.0000000000", bond.Shares)
-
 	summary := getDelegationSummary(t, port, addr)
 
 	require.Len(t, summary.Delegations, 1, "Delegation summary holds all delegations")
 	require.Equal(t, "60.0000000000", summary.Delegations[0].Shares)
 	require.Len(t, summary.UnbondingDelegations, 0, "Delegation summary holds all unbonding-delegations")
-
-	bondedValidators := getDelegatorValidators(t, port, addr)
-	require.Len(t, bondedValidators, 1)
-	require.Equal(t, validator1Owner, bondedValidators[0].Owner)
-	require.Equal(t, validator.DelegatorShares.Add(sdk.NewDec(60)).String(), bondedValidators[0].DelegatorShares.String())
-
-	bondedValidator := getDelegatorValidator(t, port, addr, validator1Owner)
-	require.Equal(t, validator1Owner, bondedValidator.Owner)
-
-	//////////////////////
-	// testing unbonding
-
-	resultTx = doBeginUnbonding(t, port, seed, name, password, addr, validator1Owner, 60)
-	tests.WaitForHeight(resultTx.Height+1, port)
-
-	require.Equal(t, uint32(0), resultTx.CheckTx.Code)
-	require.Equal(t, uint32(0), resultTx.DeliverTx.Code)
-
-	// sender should have not received any coins as the unbonding has only just begun
-	acc = getAccount(t, port, addr)
-	coins = acc.GetCoins()
-	require.Equal(t, int64(40), coins.AmountOf("steak").Int64())
-
-	unbondings := getUndelegations(t, port, addr, validator1Owner)
-	require.Len(t, unbondings, 1, "Unbondings holds all unbonding-delegations")
-	require.Equal(t, "60", unbondings[0].Balance.Amount.String())
-
-	summary = getDelegationSummary(t, port, addr)
-
-	require.Len(t, summary.Delegations, 0, "Delegation summary holds all delegations")
-	require.Len(t, summary.UnbondingDelegations, 1, "Delegation summary holds all unbonding-delegations")
-	require.Equal(t, "60", summary.UnbondingDelegations[0].Balance.Amount.String())
-
-	bondedValidators = getDelegatorValidators(t, port, addr)
-	require.Len(t, bondedValidators, 0, "There's no delegation as the user withdraw all funds")
-
-	// TODO Undonding status not currently implemented
-	// require.Equal(t, sdk.Unbonding, bondedValidators[0].Status)
-
-	// TODO add redelegation, need more complex capabilities such to mock context and
-	// TODO check summary for redelegation
-	// assert.Len(t, summary.Redelegations, 1, "Delegation summary holds all redelegations")
-
-	// query txs
-	txs := getBondingTxs(t, port, addr, "")
-	assert.Len(t, txs, 2, "All Txs found")
-
-	txs = getBondingTxs(t, port, addr, "bond")
-	assert.Len(t, txs, 1, "All bonding txs found")
-
-	txs = getBondingTxs(t, port, addr, "unbond")
-	assert.Len(t, txs, 1, "All unbonding txs found")
 }
 
 func TestSubmitProposal(t *testing.T) {
