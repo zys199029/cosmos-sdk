@@ -86,11 +86,11 @@ func tally(ctx sdk.Context, keeper Keeper, proposal Proposal) (passes bool, tall
 		percentAfterMinus := sharesAfterMinus.Quo(val.DelegatorShares)
 		votingPower := val.Power.Mul(percentAfterMinus)
 
-		fmt.Println()
-		fmt.Println("Voting Powers")
-		fmt.Println(val.Address)
-		fmt.Println(votingPower)
-		fmt.Println()
+		// fmt.Println()
+		// fmt.Println("Voting Powers")
+		// fmt.Println(val.Address)
+		// fmt.Println(votingPower)
+		// fmt.Println()
 
 		results[val.Vote] = results[val.Vote].Add(votingPower)
 		totalVotingPower = totalVotingPower.Add(votingPower)
@@ -105,13 +105,13 @@ func tally(ctx sdk.Context, keeper Keeper, proposal Proposal) (passes bool, tall
 		NoWithVeto: results[OptionNoWithVeto],
 	}
 
-	fmt.Println()
-	fmt.Println("Vote Tally")
-	fmt.Println(results[OptionYes])
-	fmt.Println(results[OptionAbstain])
-	fmt.Println(results[OptionNo])
-	fmt.Println(results[OptionNoWithVeto])
-	fmt.Println()
+	// fmt.Println()
+	// fmt.Println("Vote Tally")
+	// fmt.Println(results[OptionYes])
+	// fmt.Println(results[OptionAbstain])
+	// fmt.Println(results[OptionNo])
+	// fmt.Println(results[OptionNoWithVeto])
+	// fmt.Println()
 
 	// If no one votes, proposal fails
 	if totalVotingPower.Sub(results[OptionAbstain]).Equal(sdk.ZeroDec()) {
