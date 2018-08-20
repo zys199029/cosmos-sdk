@@ -499,7 +499,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:7a71fffde456d746c52f9cd09c50b034533a3180fb1f6320abb149f2ccc579e5"
+  digest = "1:27507554c6d4f060d8d700c31c624a43d3a92baa634e178ddc044bdf7d13b44a"
   name = "golang.org/x/crypto"
   packages = [
     "blowfish",
@@ -518,7 +518,7 @@
     "salsa20/salsa",
   ]
   pruneopts = "UT"
-  revision = "aabede6cba87e37f413b3e60ebfc214f8eeca1b0"
+  revision = "614d502a4dac94afa3a6ce146bd1736da82514c6"
 
 [[projects]]
   digest = "1:d36f55a999540d29b6ea3c2ea29d71c76b1d9853fdcd3e5c5cb4836f2ba118f1"

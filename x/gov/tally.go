@@ -1,6 +1,8 @@
 package gov
 
 import (
+	"fmt"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -23,7 +25,13 @@ func tally(ctx sdk.Context, keeper Keeper, proposal Proposal) (passes bool, tall
 	totalVotingPower := sdk.ZeroDec()
 	currValidators := make(map[string]validatorGovInfo)
 
+	fmt.Println()
+	fmt.Println("Bonded vals")
+
 	keeper.vs.IterateValidatorsBonded(ctx, func(index int64, validator sdk.Validator) (stop bool) {
+
+		fmt.Println(validator.GetOperator())
+
 		currValidators[validator.GetOperator().String()] = validatorGovInfo{
 			Address:         validator.GetOperator(),
 			Power:           validator.GetPower(),
@@ -33,6 +41,7 @@ func tally(ctx sdk.Context, keeper Keeper, proposal Proposal) (passes bool, tall
 		}
 		return false
 	})
+	fmt.Println()
 
 	// iterate over all the votes
 	votesIterator := keeper.GetVotes(ctx, proposal.GetProposalID())
@@ -77,6 +86,12 @@ func tally(ctx sdk.Context, keeper Keeper, proposal Proposal) (passes bool, tall
 		percentAfterMinus := sharesAfterMinus.Quo(val.DelegatorShares)
 		votingPower := val.Power.Mul(percentAfterMinus)
 
+		fmt.Println()
+		fmt.Println("Voting Powers")
+		fmt.Println(val.Address)
+		fmt.Println(votingPower)
+		fmt.Println()
+
 		results[val.Vote] = results[val.Vote].Add(votingPower)
 		totalVotingPower = totalVotingPower.Add(votingPower)
 	}
@@ -89,6 +104,14 @@ func tally(ctx sdk.Context, keeper Keeper, proposal Proposal) (passes bool, tall
 		No:         results[OptionNo],
 		NoWithVeto: results[OptionNoWithVeto],
 	}
+
+	fmt.Println()
+	fmt.Println("Vote Tally")
+	fmt.Println(results[OptionYes])
+	fmt.Println(results[OptionAbstain])
+	fmt.Println(results[OptionNo])
+	fmt.Println(results[OptionNoWithVeto])
+	fmt.Println()
 
 	// If no one votes, proposal fails
 	if totalVotingPower.Sub(results[OptionAbstain]).Equal(sdk.ZeroDec()) {

@@ -1,6 +1,7 @@
 package gov
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -14,7 +15,7 @@ import (
 )
 
 var (
-	pubkeys = []crypto.PubKey{ed25519.GenPrivKey().PubKey(), ed25519.GenPrivKey().PubKey(), ed25519.GenPrivKey().PubKey()}
+	pubkeys = []crypto.PubKey{ed25519.GenPrivKey().PubKey(), ed25519.GenPrivKey().PubKey(), ed25519.GenPrivKey().PubKey(), ed25519.GenPrivKey().PubKey()}
 )
 
 func createValidators(t *testing.T, stakeHandler sdk.Handler, ctx sdk.Context, addrs []sdk.AccAddress, coinAmt []int64) {
@@ -99,7 +100,7 @@ func TestTallyOnlyValidators51Yes(t *testing.T) {
 	ctx := mapp.BaseApp.NewContext(false, abci.Header{})
 	stakeHandler := stake.NewHandler(sk)
 
-	createValidators(t, stakeHandler, ctx, addrs[:3], []int64{6, 6, 7})
+	createValidators(t, stakeHandler, ctx, addrs[:4], []int64{6, 6, 7, 6})
 
 	proposal := keeper.NewTextProposal(ctx, "Test", "description", ProposalTypeText)
 	proposalID := proposal.GetProposalID()
@@ -112,6 +113,36 @@ func TestTallyOnlyValidators51Yes(t *testing.T) {
 	require.Nil(t, err)
 	err = keeper.AddVote(ctx, proposalID, addrs[2], OptionNo)
 	require.Nil(t, err)
+
+	fmt.Println()
+	fmt.Println("Val exists")
+	val := keeper.vs.Validator(ctx, addrs[0])
+	fmt.Println(val == nil)
+	fmt.Println(val.GetStatus())
+	val = keeper.vs.Validator(ctx, addrs[1])
+	fmt.Println(val == nil)
+	fmt.Println(val.GetStatus())
+	val = keeper.vs.Validator(ctx, addrs[2])
+	fmt.Println(val == nil)
+	fmt.Println(val.GetStatus())
+	val = keeper.vs.Validator(ctx, addrs[3])
+	fmt.Println(val == nil)
+	fmt.Println(val.GetStatus())
+
+	fmt.Println()
+
+	fmt.Println()
+	fmt.Println("Val Votes")
+	x, found := keeper.GetVote(ctx, proposalID, addrs[0])
+	fmt.Println(x)
+	fmt.Println(found)
+	x, found = keeper.GetVote(ctx, proposalID, addrs[1])
+	fmt.Println(x)
+	fmt.Println(found)
+	x, found = keeper.GetVote(ctx, proposalID, addrs[2])
+	fmt.Println(x)
+	fmt.Println(found)
+	fmt.Println()
 
 	passes, tallyResults, _ := tally(ctx, keeper, keeper.GetProposal(ctx, proposalID))
 
