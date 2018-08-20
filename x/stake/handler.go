@@ -77,8 +77,11 @@ func handleMsgCreateValidator(ctx sdk.Context, msg types.MsgCreateValidator, k k
 	}
 
 	validator := NewValidator(msg.ValidatorAddr, msg.PubKey, msg.Description)
+	k.DumpAllKeys(ctx, "Step 1")
 	k.SetValidator(ctx, validator)
+	k.DumpAllKeys(ctx, "Step 2")
 	k.SetValidatorByPubKeyIndex(ctx, validator)
+	k.DumpAllKeys(ctx, "Step 3")
 
 	// move coins from the msg.Address account to a (self-delegation) delegator account
 	// the validator account and global shares are updated within here
@@ -86,6 +89,8 @@ func handleMsgCreateValidator(ctx sdk.Context, msg types.MsgCreateValidator, k k
 	if err != nil {
 		return err.Result()
 	}
+
+	k.DumpAllKeys(ctx, "Step 4")
 
 	tags := sdk.NewTags(
 		tags.Action, tags.ActionCreateValidator,

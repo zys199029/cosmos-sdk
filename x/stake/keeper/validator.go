@@ -32,6 +32,23 @@ func (k Keeper) GetValidatorByPubKey(ctx sdk.Context, pubkey crypto.PubKey) (val
 	return k.GetValidator(ctx, addr)
 }
 
+func (k Keeper) DumpAllKeys(ctx sdk.Context, title string) {
+
+	fmt.Printf("----- %v ------\n", title)
+
+	store := ctx.KVStore(k.storeKey)
+	itr := store.Iterator(nil, nil)
+	defer itr.Close()
+
+	for ; itr.Valid(); itr.Next() {
+		k, v := itr.Key(), itr.Value()
+		fmt.Printf("STORE: %X -> %X\n",
+			k, v)
+	}
+
+	fmt.Printf("----- END %v ------\n", title)
+}
+
 // set the main record holding validator details
 func (k Keeper) SetValidator(ctx sdk.Context, validator types.Validator) {
 	store := ctx.KVStore(k.storeKey)
