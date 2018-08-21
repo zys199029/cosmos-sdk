@@ -18,6 +18,9 @@ import (
 	"github.com/cosmos/cosmos-sdk/tests"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
+	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
+	authctx "github.com/cosmos/cosmos-sdk/x/auth/client/context"
+	"github.com/cosmos/cosmos-sdk/x/stake"
 	"github.com/gorilla/mux"
 	"github.com/pact-foundation/pact-go/dsl"
 	"github.com/pact-foundation/pact-go/types"
@@ -200,6 +203,7 @@ func createSetupServer(t *testing.T, reset func()) string {
 		// Reset the state of the Gaiad node to genesis so that each test is
 		// indepedent.
 		reset()
+		cdc := gapp.MakeCodec()
 
 		var state *types.ProviderState
 		decoder := json.NewDecoder(request.Body)
@@ -207,6 +211,14 @@ func createSetupServer(t *testing.T, reset func()) string {
 
 		if state.State == "delegated" {
 			// We don't do anything yet.
+			txCtx := authctx.NewTxContextFromCLI().WithCodec(cdc)
+			cliCtx := context.NewCLIContext().
+				WithCodec(cdc).
+				WithLogger(os.Stdout).
+				WithAccountDecoder(authcmd.GetAccountDecoder(cdc))
+			amount := sdk.NewCoin("steak", sdk.NewInt(42))
+			msg := stake.NewMsgDelegate(delegatorAddr, validatorAddr, amount)
+
 		}
 
 		writer.Header().Set("Content-Type", "application/json")
