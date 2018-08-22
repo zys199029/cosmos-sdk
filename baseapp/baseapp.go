@@ -565,10 +565,25 @@ func getState(app *BaseApp, mode runTxMode) *state {
 	return app.deliverState
 }
 
-func (app *BaseApp) simulateTx(txBytes []byte, tx sdk.Tx) (result sdk.Result) {
+func (app *BaseApp) applyTxMode(ctx sdk.Context, mode runTxMode) sdk.Context {
+	if mode != runTxModeSimulate {
+		return ctx
+	}
+	return ctx.WithMultiStore(getState(app, runTxModeSimulate).CacheMultiStore())
+}
+
+// runTx processes a transaction. The transactions is proccessed via an
+// anteHandler. txBytes may be nil in some cases, eg. in tests. Also, in the
+// future we may support "internal" transactions.
+func (app *BaseApp) runTx(mode runTxMode, txBytes []byte, tx sdk.Tx) (result sdk.Result) {
+	// NOTE: GasWanted should be returned by the AnteHandler. GasUsed is
+	// determined by the GasMeter. We need access to the context to get the gas
+	// meter so we initialize upfront.
 	var gasWanted int64
-	ctx := app.getContextForAnte(runTxModeSimulate, txBytes).WithMultiStore(
-		getState(app, runTxModeSimulate).CacheMultiStore())
+	var msCache sdk.CacheMultiStore
+	ctx := app.getContextForAnte(mode, txBytes)
+	ctx = app.applyTxMode(ctx, mode)
+
 	defer func() {
 		if r := recover(); r != nil {
 			switch rType := r.(type) {
@@ -603,64 +618,15 @@ func (app *BaseApp) simulateTx(txBytes []byte, tx sdk.Tx) (result sdk.Result) {
 		gasWanted = result.GasWanted
 	}
 
-	result = app.runMsgs(ctx, msgs, runTxModeSimulate)
-	result.GasWanted = gasWanted
-
-	return
-}
-
-// runTx processes a transaction. The transactions is proccessed via an
-// anteHandler. txBytes may be nil in some cases, eg. in tests. Also, in the
-// future we may support "internal" transactions.
-func (app *BaseApp) runTx(mode runTxMode, txBytes []byte, tx sdk.Tx) (result sdk.Result) {
-	// NOTE: GasWanted should be returned by the AnteHandler. GasUsed is
-	// determined by the GasMeter. We need access to the context to get the gas
-	// meter so we initialize upfront.
-	var gasWanted int64
 	if mode == runTxModeSimulate {
-		return app.simulateTx(txBytes, tx)
-	}
-	ctx := app.getContextForAnte(mode, txBytes)
-
-	defer func() {
-		if r := recover(); r != nil {
-			switch rType := r.(type) {
-			case sdk.ErrorOutOfGas:
-				log := fmt.Sprintf("out of gas in location: %v", rType.Descriptor)
-				result = sdk.ErrOutOfGas(log).Result()
-			default:
-				log := fmt.Sprintf("recovered: %v\nstack:\n%v", r, string(debug.Stack()))
-				result = sdk.ErrInternal(log).Result()
-			}
-		}
-
+		result = app.runMsgs(ctx, msgs, mode)
 		result.GasWanted = gasWanted
-		result.GasUsed = ctx.GasMeter().GasConsumed()
-	}()
-
-	var msgs = tx.GetMsgs()
-
-	err := validateBasicTxMsgs(msgs)
-	if err != nil {
-		return err.Result()
-	}
-
-	// run the ante handler
-	if app.anteHandler != nil {
-		newCtx, result, abort := app.anteHandler(ctx, tx)
-		if abort {
-			return result
-		}
-		if !newCtx.IsZero() {
-			ctx = newCtx
-		}
-
-		gasWanted = result.GasWanted
+		return
 	}
 
 	// Keep the state in a transient CacheWrap in case processing the messages
 	// fails.
-	msCache := getState(app, mode).CacheMultiStore()
+	msCache = getState(app, mode).CacheMultiStore()
 	if msCache.TracingEnabled() {
 		msCache = msCache.WithTracingContext(sdk.TraceContext(
 			map[string]interface{}{"txHash": cmn.HexBytes(tmhash.Sum(txBytes)).String()},
