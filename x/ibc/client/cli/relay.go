@@ -5,13 +5,11 @@ import (
 	"time"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
-	"github.com/cosmos/cosmos-sdk/client/keys"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/lib"
 	wire "github.com/cosmos/cosmos-sdk/wire"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
-	authctx "github.com/cosmos/cosmos-sdk/x/auth/client/context"
 	"github.com/cosmos/cosmos-sdk/x/ibc"
 
 	"github.com/spf13/cobra"
@@ -78,19 +76,18 @@ func IBCRelayCmd(cdc *wire.Codec) *cobra.Command {
 func (c relayCommander) runIBCRelay(cmd *cobra.Command, args []string) {
 	srcChainID := viper.GetString(FlagSrcChainID)
 	srcChainNode := viper.GetString(FlagSrcChainNode)
-	toChainID := viper.GetString(FlagDestChainID)
-	toChainNode := viper.GetString(FlagDestChainNode)
-	address, err := context.NewCoreContextFromViper().GetFromAddress()
+	destChainID := viper.GetString(FlagDestChainID)
+	destChainNode := viper.GetString(FlagDestChainNode)
+	address, err := context.NewCLIContext().GetFromAddress()
 	if err != nil {
 		panic(err)
 	}
 
 	c.address = address
 
-	ctx := context.NewCoreContextFromViper()
 	// TODO: use proper config
 	egressQueue := lib.NewLinearClient(ctx.WithNodeURI(srcChainNode), "bank", c.cdc, []byte("ibc/"), nil)
-	c.loop(egressQueue, srcChainID, toChainID, toChainNode)
+	c.loop(egressQueue, srcChainID, destChainID, destChainNode)
 }
 
 func (c relayCommander) processed(node string, srcChainID string) uint64 {

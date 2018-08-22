@@ -32,7 +32,7 @@ func SendTxCmd(cdc *wire.Codec) *cobra.Command {
 				return err
 			}
 
-			toStr := viper.GetString(flagTo)
+			toStr := viper.GetString(FlagTo)
 			to, err := sdk.AccAddressFromBech32(toStr)
 			if err != nil {
 				return err

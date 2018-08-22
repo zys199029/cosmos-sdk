@@ -10,7 +10,6 @@ import (
 	wire "github.com/cosmos/cosmos-sdk/wire"
 	authcmd "github.com/cosmos/cosmos-sdk/x/auth/client/cli"
 	authctx "github.com/cosmos/cosmos-sdk/x/auth/client/context"
-	"github.com/cosmos/cosmos-sdk/x/ibc"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
