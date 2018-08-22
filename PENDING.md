@@ -33,6 +33,7 @@ FEATURES
 * Gaia CLI  (`gaiacli`)
   * [cli] Cmds to query staking pool and params
   * [gov][cli] #2062 added `--proposal` flag to `submit-proposal` that allows a JSON file containing a proposal to be passed in
+  * [cli] \#2047 New --gas-auto flag enabled by default to set gas limit obtained by simulating the tx execution
 
 * Gaia
 
