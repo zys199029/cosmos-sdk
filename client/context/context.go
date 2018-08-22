@@ -22,7 +22,7 @@ type CLIContext struct {
 	Client          rpcclient.Client
 	Logger          io.Writer
 	Height          int64
-	GasAuto         bool
+	Gas             int64
 	NodeURI         string
 	FromAddressName string
 	AccountStore    string
@@ -49,7 +49,7 @@ func NewCLIContext() CLIContext {
 		AccountStore:    ctxAccStoreName,
 		FromAddressName: viper.GetString(client.FlagFrom),
 		Height:          viper.GetInt64(client.FlagHeight),
-		GasAuto:         viper.GetBool(client.FlagGasAuto),
+		Gas:             viper.GetInt64(client.FlagGas),
 		TrustNode:       viper.GetBool(client.FlagTrustNode),
 		UseLedger:       viper.GetBool(client.FlagUseLedger),
 		Async:           viper.GetBool(client.FlagAsync),

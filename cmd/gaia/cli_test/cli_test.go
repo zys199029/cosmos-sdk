@@ -94,16 +94,16 @@ func TestGaiaCLIGasAuto(t *testing.T) {
 	fooAcc := executeGetAccount(t, fmt.Sprintf("gaiacli account %s %v", fooAddr, flags))
 	require.Equal(t, int64(50), fooAcc.GetCoins().AmountOf("steak").Int64())
 
-	// Test failure with --gas-auto disabled and very little gas set by hand
-	success := executeWrite(t, fmt.Sprintf("gaiacli send %v --gas-auto=false --gas=10 --amount=10steak --to=%s --from=foo", flags, barAddr), app.DefaultKeyPass)
+	// Test failure with auto gas disabled and very little gas set by hand
+	success := executeWrite(t, fmt.Sprintf("gaiacli send %v --gas=10 --amount=10steak --to=%s --from=foo", flags, barAddr), app.DefaultKeyPass)
 	require.False(t, success)
 	tests.WaitForNextNBlocksTM(2, port)
 	// Check state didn't change
 	fooAcc = executeGetAccount(t, fmt.Sprintf("gaiacli account %s %v", fooAddr, flags))
 	require.Equal(t, int64(50), fooAcc.GetCoins().AmountOf("steak").Int64())
 
-	// Enable --gas-auto
-	success = executeWrite(t, fmt.Sprintf("gaiacli send %v --gas-auto=true --amount=10steak --to=%s --from=foo", flags, barAddr), app.DefaultKeyPass)
+	// Enable auto gas
+	success = executeWrite(t, fmt.Sprintf("gaiacli send %v --gas=0 --amount=10steak --to=%s --from=foo", flags, barAddr), app.DefaultKeyPass)
 	require.True(t, success)
 	tests.WaitForNextNBlocksTM(2, port)
 	// Check state has changed accordingly

@@ -76,7 +76,7 @@ func SendTx(txCtx authctx.TxContext, cliCtx context.CLIContext, msgs []sdk.Msg) 
 }
 
 func enrichCtxWithGasIfGasAuto(txCtx authctx.TxContext, cliCtx context.CLIContext, name, passphrase string, msgs []sdk.Msg) (authctx.TxContext, error) {
-	if cliCtx.GasAuto {
+	if cliCtx.Gas == 0 {
 		return EnrichTxContextWithGas(txCtx, cliCtx, name, passphrase, msgs)
 	}
 	return txCtx, nil
