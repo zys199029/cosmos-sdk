@@ -1,10 +1,12 @@
 package rest
 
 import (
+	"errors"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
+	"github.com/cosmos/cosmos-sdk/client/utils"
 	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
@@ -47,37 +49,32 @@ func SendRequestHandlerFn(cdc *wire.Codec, kb keys.Keybase, cliCtx context.CLICo
 
 		to, err := sdk.AccAddressFromBech32(bech32addr)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
+			writeErr(&w, http.StatusBadRequest, err.Error())
 			return
 		}
 
 		var m sendBody
 		body, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
+			writeErr(&w, http.StatusBadRequest, err.Error())
 			return
 		}
 		err = msgCdc.UnmarshalJSON(body, &m)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte(err.Error()))
+			writeErr(&w, http.StatusBadRequest, err.Error())
 			return
 		}
 
 		info, err := kb.Get(m.LocalAccountName)
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(err.Error()))
+			writeErr(&w, http.StatusUnauthorized, err.Error())
 			return
 		}
 
 		// build message
 		msg := client.BuildMsg(sdk.AccAddress(info.GetPubKey().Address()), to, m.Amount)
 		if err != nil { // XXX rechecking same error ?
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			writeErr(&w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
@@ -89,27 +86,38 @@ func SendRequestHandlerFn(cdc *wire.Codec, kb keys.Keybase, cliCtx context.CLICo
 			Sequence:      m.Sequence,
 		}
 
+		if m.Gas == 0 {
+			txCtx, err = utils.EnrichTxContextWithGas(txCtx, cliCtx, m.LocalAccountName, m.Password, []sdk.Msg{msg})
+			if err != nil {
+				writeErr(&w, http.StatusUnauthorized, err.Error())
+				return
+			}
+		}
+
 		txBytes, err := txCtx.BuildAndSign(m.LocalAccountName, m.Password, []sdk.Msg{msg})
 		if err != nil {
-			w.WriteHeader(http.StatusUnauthorized)
-			w.Write([]byte(err.Error()))
+			writeErr(&w, http.StatusUnauthorized, err.Error())
 			return
 		}
 
 		res, err := cliCtx.BroadcastTx(txBytes)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			writeErr(&w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
 		output, err := wire.MarshalJSONIndent(cdc, res)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte(err.Error()))
+			writeErr(&w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
 		w.Write(output)
 	}
+}
+
+func writeErr(w *http.ResponseWriter, status int, msg string) {
+	(*w).WriteHeader(status)
+	err := errors.New(msg)
+	(*w).Write([]byte(err.Error()))
 }

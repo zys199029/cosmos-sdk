@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
+	"github.com/cosmos/cosmos-sdk/client/utils"
 	"github.com/cosmos/cosmos-sdk/crypto/keys"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
@@ -77,6 +78,15 @@ func TransferRequestHandlerFn(cdc *wire.Codec, kb keys.Keybase, cliCtx context.C
 			AccountNumber: m.AccountNumber,
 			Sequence:      m.Sequence,
 			Gas:           m.Gas,
+		}
+
+		if m.Gas == 0 {
+			txCtx, err = utils.EnrichTxContextWithGas(txCtx, cliCtx, m.LocalAccountName, m.Password, []sdk.Msg{msg})
+			if err != nil {
+				w.WriteHeader(http.StatusUnauthorized)
+				w.Write([]byte(err.Error()))
+				return
+			}
 		}
 
 		txBytes, err := txCtx.BuildAndSign(m.LocalAccountName, m.Password, []sdk.Msg{msg})

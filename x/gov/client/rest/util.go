@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/cosmos/cosmos-sdk/client/context"
+	"github.com/cosmos/cosmos-sdk/client/utils"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
 	authctx "github.com/cosmos/cosmos-sdk/x/auth/client/context"
@@ -74,6 +75,7 @@ func writeErr(w *http.ResponseWriter, status int, msg string) {
 // TODO: Build this function out into a more generic base-request
 // (probably should live in client/lcd).
 func signAndBuild(w http.ResponseWriter, cliCtx context.CLIContext, baseReq baseReq, msg sdk.Msg, cdc *wire.Codec) {
+	var err error
 	txCtx := authctx.TxContext{
 		Codec:         cdc,
 		AccountNumber: baseReq.AccountNumber,
@@ -82,6 +84,13 @@ func signAndBuild(w http.ResponseWriter, cliCtx context.CLIContext, baseReq base
 		Gas:           baseReq.Gas,
 	}
 
+	if baseReq.Gas == 0 {
+		txCtx, err = utils.EnrichTxContextWithGas(txCtx, cliCtx, baseReq.Name, baseReq.Password, []sdk.Msg{msg})
+		if err != nil {
+			writeErr(&w, http.StatusUnauthorized, err.Error())
+			return
+		}
+	}
 	txBytes, err := txCtx.BuildAndSign(baseReq.Name, baseReq.Password, []sdk.Msg{msg})
 	if err != nil {
 		writeErr(&w, http.StatusUnauthorized, err.Error())

@@ -495,13 +495,11 @@ func validateBasicTxMsgs(msgs []sdk.Msg) sdk.Error {
 
 func (app *BaseApp) getContextForAnte(mode runTxMode, txBytes []byte) (ctx sdk.Context) {
 	// Get the context
-	if mode == runTxModeCheck || mode == runTxModeSimulate {
-		ctx = app.checkState.ctx.WithTxBytes(txBytes)
-	} else {
-		ctx = app.deliverState.ctx.WithTxBytes(txBytes)
-		ctx = ctx.WithSigningValidators(app.signedValidators)
+	ctx = getState(app, mode).ctx.WithTxBytes(txBytes)
+	if mode != runTxModeDeliver {
+		return
 	}
-
+	ctx = ctx.WithSigningValidators(app.signedValidators)
 	return
 }
 
@@ -567,6 +565,50 @@ func getState(app *BaseApp, mode runTxMode) *state {
 	return app.deliverState
 }
 
+func (app *BaseApp) simulateTx(txBytes []byte, tx sdk.Tx) (result sdk.Result) {
+	var gasWanted int64
+	ctx := app.getContextForAnte(runTxModeSimulate, txBytes).WithMultiStore(
+		getState(app, runTxModeSimulate).CacheMultiStore())
+	defer func() {
+		if r := recover(); r != nil {
+			switch rType := r.(type) {
+			case sdk.ErrorOutOfGas:
+				log := fmt.Sprintf("out of gas in location: %v", rType.Descriptor)
+				result = sdk.ErrOutOfGas(log).Result()
+			default:
+				log := fmt.Sprintf("recovered: %v\nstack:\n%v", r, string(debug.Stack()))
+				result = sdk.ErrInternal(log).Result()
+			}
+		}
+
+		result.GasWanted = gasWanted
+		result.GasUsed = ctx.GasMeter().GasConsumed()
+	}()
+
+	var msgs = tx.GetMsgs()
+	if err := validateBasicTxMsgs(msgs); err != nil {
+		return err.Result()
+	}
+
+	// run the ante handler
+	if app.anteHandler != nil {
+		newCtx, result, abort := app.anteHandler(ctx, tx)
+		if abort {
+			return result
+		}
+		if !newCtx.IsZero() {
+			ctx = newCtx
+		}
+
+		gasWanted = result.GasWanted
+	}
+
+	result = app.runMsgs(ctx, msgs, runTxModeSimulate)
+	result.GasWanted = gasWanted
+
+	return
+}
+
 // runTx processes a transaction. The transactions is proccessed via an
 // anteHandler. txBytes may be nil in some cases, eg. in tests. Also, in the
 // future we may support "internal" transactions.
@@ -575,6 +617,9 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte, tx sdk.Tx) (result sdk
 	// determined by the GasMeter. We need access to the context to get the gas
 	// meter so we initialize upfront.
 	var gasWanted int64
+	if mode == runTxModeSimulate {
+		return app.simulateTx(txBytes, tx)
+	}
 	ctx := app.getContextForAnte(mode, txBytes)
 
 	defer func() {
@@ -627,7 +672,7 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte, tx sdk.Tx) (result sdk
 	result.GasWanted = gasWanted
 
 	// only update state if all messages pass and we're not in a simulation
-	if result.IsOK() && mode != runTxModeSimulate {
+	if result.IsOK() {
 		msCache.Write()
 	}
 
