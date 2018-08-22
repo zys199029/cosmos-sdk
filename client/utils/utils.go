@@ -11,13 +11,10 @@ import (
 	amino "github.com/tendermint/go-amino"
 )
 
-// GasAdjustment is applied to gas estimates to avoid tx
+// DefaultGasAdjustment is applied to gas estimates to avoid tx
 // execution failures due to state changes that might
 // occur between the tx simulation and the actual run.
-const (
-	SimulateGasLimit      = 200000
-	GasEstimateAdjustment = 1.2
-)
+const DefaultGasAdjustment = 1.2
 
 // SendTx implements a auxiliary handler that facilitates sending a series of
 // messages in a signed transaction given a TxContext and a QueryContext. It
@@ -86,7 +83,7 @@ func enrichCtxWithGasIfGasAuto(txCtx authctx.TxContext, cliCtx context.CLIContex
 // then populate the relevant TxContext.Gas field with the estimate
 // obtained by the query.
 func EnrichTxContextWithGas(txCtx authctx.TxContext, cliCtx context.CLIContext, name, passphrase string, msgs []sdk.Msg) (authctx.TxContext, error) {
-	txCtxSimulation := txCtx.WithGas(SimulateGasLimit)
+	txCtxSimulation := txCtx.WithGas(0)
 	txBytes, err := txCtxSimulation.BuildAndSign(name, passphrase, msgs)
 	if err != nil {
 		return txCtx, err
@@ -101,13 +98,16 @@ func EnrichTxContextWithGas(txCtx authctx.TxContext, cliCtx context.CLIContext, 
 	if err != nil {
 		return txCtx, err
 	}
-	adjusted := adjustGasEstimate(estimate)
+	adjusted := adjustGasEstimate(estimate, cliCtx.GasAdjustment)
 	fmt.Fprintf(os.Stderr, "gas: [estimated = %v] [adjusted = %v]\n", estimate, adjusted)
 	return txCtx.WithGas(adjusted), nil
 }
 
-func adjustGasEstimate(estimate int64) int64 {
-	return int64(GasEstimateAdjustment * float64(estimate))
+func adjustGasEstimate(estimate int64, adjustment float64) int64 {
+	if adjustment == 0 {
+		return int64(DefaultGasAdjustment * float64(estimate))
+	}
+	return int64(adjustment * float64(estimate))
 }
 
 func parseQueryResponse(cdc *amino.Codec, rawRes []byte) (int64, error) {
