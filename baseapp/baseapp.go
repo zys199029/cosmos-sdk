@@ -637,7 +637,7 @@ func (app *BaseApp) runTx(mode runTxMode, txBytes []byte, tx sdk.Tx) (result sdk
 	result = app.runMsgs(ctx, msgs, mode)
 	result.GasWanted = gasWanted
 
-	// only update state if all messages pass and we're not in a simulation
+	// only update state if all messages pass
 	if result.IsOK() {
 		msCache.Write()
 	}
