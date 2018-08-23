@@ -6,6 +6,8 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/wire"
 	"github.com/cosmos/cosmos-sdk/x/auth"
+	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/crypto/secp256k1"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -20,6 +22,7 @@ type TxContext struct {
 	ChainID       string
 	Memo          string
 	Fee           string
+	SkipSigCheck  bool
 }
 
 // NewTxContextFromCLI returns a new initialized TxContext with parameters from
@@ -41,6 +44,7 @@ func NewTxContextFromCLI() TxContext {
 		Sequence:      viper.GetInt64(client.FlagSequence),
 		Fee:           viper.GetString(client.FlagFee),
 		Memo:          viper.GetString(client.FlagMemo),
+		SkipSigCheck:  viper.GetBool(client.FlagDryRun),
 	}
 }
 
@@ -86,6 +90,12 @@ func (ctx TxContext) WithAccountNumber(accnum int64) TxContext {
 	return ctx
 }
 
+// WithSimulate returns a copy of the context with an updated simulate flag.
+func (ctx TxContext) WithSkipSigCheck(skipsigcheck bool) TxContext {
+	ctx.Simulate = skipsigcheck
+	return ctx
+}
+
 // Build builds a single message to be signed from a TxContext given a set of
 // messages. It returns an error if a fee is supplied but cannot be parsed.
 func (ctx TxContext) Build(msgs []sdk.Msg) (auth.StdSignMsg, error) {
@@ -112,6 +122,13 @@ func (ctx TxContext) Build(msgs []sdk.Msg) (auth.StdSignMsg, error) {
 		Msgs:          msgs,
 		Fee:           auth.NewStdFee(ctx.Gas, fee),
 	}, nil
+}
+
+func fakeSign(msg auth.StdSignMsg) (sig []byte, pub crypto.PubKey, err error) {
+	priv := secp256k1.GenPrivKey()
+	pub = priv.PubKey()
+	sig, err = priv.Sign()
+	return
 }
 
 // Sign signs a transaction given a name, passphrase, and a single message to
@@ -145,6 +162,8 @@ func (ctx TxContext) BuildAndSign(name, passphrase string, msgs []sdk.Msg) ([]by
 	if err != nil {
 		return nil, err
 	}
-
+	if tx.SkipSigCheck {
+		return fakeSign(msg)
+	}
 	return ctx.Sign(name, passphrase, msg)
 }

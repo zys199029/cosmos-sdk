@@ -53,9 +53,14 @@ func SendTx(txCtx authctx.TxContext, cliCtx context.CLIContext, msgs []sdk.Msg) 
 		txCtx = txCtx.WithSequence(accSeq)
 	}
 
-	passphrase, err := keys.GetPassphrase(cliCtx.FromAddressName)
-	if err != nil {
-		return err
+	var passphrase string
+	if txCtx.SkipSigCheck {
+		passphrase = ""
+	} else {
+		passphrase, err = keys.GetPassphrase(cliCtx.FromAddressName)
+		if err != nil {
+			return err
+		}
 	}
 
 	txCtx, err = enrichCtxWithGasIfGasAuto(txCtx, cliCtx, cliCtx.FromAddressName, passphrase, msgs)

@@ -23,6 +23,12 @@ const (
 // and deducts fees from the first signer.
 // nolint: gocyclo
 func NewAnteHandler(am AccountMapper, fck FeeCollectionKeeper) sdk.AnteHandler {
+	return NewAnteHandlerWithSimulate(am, fck, false)
+}
+
+// NewAnteHandlerWithSimulate returns an AnteHandler [TO BE CONTINUED]
+// nolint: gocyclo
+func NewAnteHandlerWithSimulate(am AccountMapper, fck FeeCollectionKeeper, simulate bool) sdk.AnteHandler {
 
 	return func(
 		ctx sdk.Context, tx sdk.Tx,
@@ -60,7 +66,7 @@ func NewAnteHandler(am AccountMapper, fck FeeCollectionKeeper) sdk.AnteHandler {
 			}
 		}()
 
-		err := validateBasic(stdTx)
+		err := validateBasic(stdTx, simulate)
 		if err != nil {
 			return newCtx, err.Result(), true
 		}
@@ -81,6 +87,15 @@ func NewAnteHandler(am AccountMapper, fck FeeCollectionKeeper) sdk.AnteHandler {
 		}
 		fee := stdTx.Fee
 
+		if simulate && len(sigs) == 0 {
+			signBytes := StdSignBytes(newCtx.ChainID(), 0, 0, fee, msgs, stdTx.GetMemo())
+			signerAcc, res := processSig(
+				newCtx, am,
+				nil, StdSignature{}, signBytes,
+				true,
+			)
+		}
+
 		// Check sig and nonce and collect signer accounts.
 		var signerAccs = make([]Account, len(signerAddrs))
 		for i := 0; i < len(sigs); i++ {
@@ -91,6 +106,7 @@ func NewAnteHandler(am AccountMapper, fck FeeCollectionKeeper) sdk.AnteHandler {
 			signerAcc, res := processSig(
 				newCtx, am,
 				signerAddr, sig, signBytes,
+				false,
 			)
 			if !res.IsOK() {
 				return newCtx, res, true
@@ -123,21 +139,19 @@ func NewAnteHandler(am AccountMapper, fck FeeCollectionKeeper) sdk.AnteHandler {
 }
 
 // Validate the transaction based on things that don't depend on the context
-func validateBasic(tx StdTx) (err sdk.Error) {
+func validateBasic(tx StdTx, simulate bool) (err sdk.Error) {
 	// Assert that there are signatures.
 	sigs := tx.GetSignatures()
-	if len(sigs) == 0 {
+	if !simulate && len(sigs) == 0 {
 		return sdk.ErrUnauthorized("no signers")
 	}
 
 	// Assert that number of signatures is correct.
-	var signerAddrs = tx.GetSigners()
-	if len(sigs) != len(signerAddrs) {
+	if signerAddrs := tx.GetSigners(); !simulate && len(sigs) != len(signerAddrs) {
 		return sdk.ErrUnauthorized("wrong number of signers")
 	}
 
-	memo := tx.GetMemo()
-	if len(memo) > maxMemoCharacters {
+	if memo := tx.GetMemo(); len(memo) > maxMemoCharacters {
 		return sdk.ErrMemoTooLarge(
 			fmt.Sprintf("maximum number of characters is %d but received %d characters",
 				maxMemoCharacters, len(memo)))
@@ -145,11 +159,16 @@ func validateBasic(tx StdTx) (err sdk.Error) {
 	return nil
 }
 
+func simulateProcessSig(ctx sdk.Context, am AccountMapper,
+	addr sdk.AccAddress, sig StdSignature, signBytes []byte, simulate bool) {
+
+}
+
 // verify the signature and increment the sequence.
 // if the account doesn't have a pubkey, set it.
 func processSig(
 	ctx sdk.Context, am AccountMapper,
-	addr sdk.AccAddress, sig StdSignature, signBytes []byte) (
+	addr sdk.AccAddress, sig StdSignature, signBytes []byte, simulate bool) (
 	acc Account, res sdk.Result) {
 
 	// Get the account.
