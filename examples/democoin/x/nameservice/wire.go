@@ -6,5 +6,5 @@ import (
 
 // Register concrete types on wire codec
 func RegisterWire(cdc *wire.Codec) {
-	cdc.RegisterConcrete(MsgSetName{}, "nameservice/SetName", nil)
+	cdc.RegisterConcrete(MsgBuyName{}, "nameservice/BuyName", nil)
 }

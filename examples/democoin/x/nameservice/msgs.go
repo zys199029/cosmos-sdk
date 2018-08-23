@@ -6,14 +6,14 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
-type MsgSetName struct {
+type MsgBuyName struct {
 	Name  string
 	Value string
 	Owner sdk.AccAddress
 }
 
-func NewMsgSetName(name string, value string, owner sdk.AccAddress) MsgSetName {
-	return MsgSetName{
+func NewMsgBuyName(name string, value string, owner sdk.AccAddress) MsgBuyName {
+	return MsgBuyName{
 		Name:  name,
 		Value: value,
 		Owner: owner,
@@ -21,10 +21,10 @@ func NewMsgSetName(name string, value string, owner sdk.AccAddress) MsgSetName {
 }
 
 // Implements Msg.
-func (msg MsgSetName) Type() string { return "nameservice" }
+func (msg MsgBuyName) Type() string { return "nameservice" }
 
 // Implements Msg.
-func (msg MsgSetName) ValidateBasic() sdk.Error {
+func (msg MsgBuyName) ValidateBasic() sdk.Error {
 	if msg.Owner.Empty() {
 		return sdk.ErrInvalidAddress(msg.Owner.String())
 	}
@@ -35,7 +35,7 @@ func (msg MsgSetName) ValidateBasic() sdk.Error {
 }
 
 // Implements Msg.
-func (msg MsgSetName) GetSignBytes() []byte {
+func (msg MsgBuyName) GetSignBytes() []byte {
 	b, err := json.Marshal(msg)
 	if err != nil {
 		panic(err)
@@ -44,6 +44,6 @@ func (msg MsgSetName) GetSignBytes() []byte {
 }
 
 // Implements Msg.
-func (msg MsgSetName) GetSigners() []sdk.AccAddress {
+func (msg MsgBuyName) GetSigners() []sdk.AccAddress {
 	return []sdk.AccAddress{msg.Owner}
 }
