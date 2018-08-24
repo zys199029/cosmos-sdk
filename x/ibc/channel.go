@@ -91,10 +91,7 @@ func (r channelRuntime) pushOutgoingQueue(data Datagram) {
 }
 
 func (r channelRuntime) getIncomingSequence() (res uint64) {
-	ok := r.incomingSequence.Get(&res)
-	if !ok {
-		return 0
-	}
+	r.incomingSequence.GetIfExists(&res)
 	return
 }
 

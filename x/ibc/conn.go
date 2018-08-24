@@ -70,7 +70,7 @@ func (r connRuntime) connEstablished() (established bool) {
 }
 
 func (r connRuntime) getCommitHeight() (height uint64) {
-	r.height.MustGet(&height)
+	r.height.Get(&height)
 	return
 }
 

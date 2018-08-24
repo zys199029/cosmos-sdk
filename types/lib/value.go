@@ -19,12 +19,12 @@ func NewValue(store sdk.KVStore, cdc *wire.Codec, key []byte) Value {
 	}
 }
 
-func (v Value) MustGet(ptr interface{}) {
+func (v Value) Get(ptr interface{}) {
 	bz := v.store.Get(v.key)
 	v.cdc.MustUnmarshalBinary(bz, ptr)
 }
 
-func (v Value) Get(ptr interface{}) bool {
+func (v Value) GetIfExists(ptr interface{}) bool {
 	bz := v.store.Get(v.key)
 	if bz == nil {
 		return false
