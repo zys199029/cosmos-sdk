@@ -19,18 +19,27 @@ func NewQuerier(keeper Keeper) sdk.Querier {
 }
 
 type QueryEgressParams struct {
-	Index int64
+	DestChain string
+	Index     int64
 }
 
 func queryEgress(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
 	var params QueryEgressParams
-	err2 := keeper.cdc.UnmarshalBinary(req.Data, &params)
+	err2 := keeper.cdc.UnmarshalJSON(req.Data, &params)
 	if err2 != nil {
 		return []byte{}, sdk.ErrUnknownRequest("incorrectly formatted request data")
 	}
 
 }
 
-func queryIngress(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
+type QueryIngressParams struct {
+	SrcChain string
+}
 
+func queryIngress(ctx sdk.Context, path []string, req abci.RequestQuery, keeper Keeper) (res []byte, err sdk.Error) {
+	var params QueryIngressParams
+	err2 := keeper.cdc.UnmarshalJSON(req.Data, &params)
+	if err2 != nil {
+		return []byte{}, sdk.ErrUnknownRequest("incorrectly formatted request data")
+	}
 }
