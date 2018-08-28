@@ -1,5 +1,7 @@
 ## PENDING
 
+small change
+
 BREAKING CHANGES
 
 * Gaia REST API (`gaiacli advanced rest-server`)
