@@ -16,6 +16,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/wire"
 	"github.com/cosmos/cosmos-sdk/x/auth"
 	"github.com/cosmos/cosmos-sdk/x/bank"
+	bankibc "github.com/cosmos/cosmos-sdk/x/bank/ibc"
 	"github.com/cosmos/cosmos-sdk/x/gov"
 	"github.com/cosmos/cosmos-sdk/x/ibc"
 	"github.com/cosmos/cosmos-sdk/x/params"
@@ -41,6 +42,7 @@ type GaiaApp struct {
 	// keys to access the substores
 	keyMain          *sdk.KVStoreKey
 	keyAccount       *sdk.KVStoreKey
+	keyBankIBC       *sdk.KVStoreKey
 	keyIBC           *sdk.KVStoreKey
 	keyStake         *sdk.KVStoreKey
 	keySlashing      *sdk.KVStoreKey
@@ -53,6 +55,7 @@ type GaiaApp struct {
 	accountMapper       auth.AccountMapper
 	feeCollectionKeeper auth.FeeCollectionKeeper
 	coinKeeper          bank.Keeper
+	bankibcKeeper       bankibc.Keeper
 	ibcKeeper           ibc.Keeper
 	stakeKeeper         stake.Keeper
 	slashingKeeper      slashing.Keeper
@@ -72,6 +75,7 @@ func NewGaiaApp(logger log.Logger, db dbm.DB, traceStore io.Writer, baseAppOptio
 		cdc:              cdc,
 		keyMain:          sdk.NewKVStoreKey("main"),
 		keyAccount:       sdk.NewKVStoreKey("acc"),
+		keyBankIBC:       sdk.NewKVStoreKey("bankibc"),
 		keyIBC:           sdk.NewKVStoreKey("ibc"),
 		keyStake:         sdk.NewKVStoreKey("stake"),
 		keySlashing:      sdk.NewKVStoreKey("slashing"),
@@ -92,6 +96,7 @@ func NewGaiaApp(logger log.Logger, db dbm.DB, traceStore io.Writer, baseAppOptio
 	app.coinKeeper = bank.NewKeeper(app.accountMapper)
 	app.paramsKeeper = params.NewKeeper(app.cdc, app.keyParams)
 	app.ibcKeeper = ibc.NewKeeper(app.cdc, app.keyIBC, app.RegisterCodespace(ibc.DefaultCodespace))
+	app.bankibcKeeper = bankibc.NewKeeper(app.cdc, app.keyBankIBC, app.coinKeeper, app.ibcKeeper)
 	app.stakeKeeper = stake.NewKeeper(app.cdc, app.keyStake, app.coinKeeper, app.RegisterCodespace(stake.DefaultCodespace))
 	app.govKeeper = gov.NewKeeper(app.cdc, app.keyGov, app.paramsKeeper.Setter(), app.coinKeeper, app.stakeKeeper, app.RegisterCodespace(gov.DefaultCodespace))
 	app.feeCollectionKeeper = auth.NewFeeCollectionKeeper(app.cdc, app.keyFeeCollection)

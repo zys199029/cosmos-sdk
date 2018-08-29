@@ -23,7 +23,7 @@ func (k Keeper) Send(h SendHandler, ctx sdk.Context, store sdk.KVStore, msg MsgS
 		},
 		Payload: payload,
 	}
-	r.pushOutgoingQueue(data)
+	r.pushEgressDatagram(data)
 
 	return
 }
@@ -50,11 +50,11 @@ func (k Keeper) Receive(h ReceiveHandler, ctx sdk.Context, store sdk.KVStore, ms
 
 	// TODO: verify merkle proof
 
-	seq := chr.getIncomingSequence()
+	seq := chr.getIngressSequence()
 	if seq != prf.Sequence {
 		return ErrInvalidSequence(k.codespace).Result()
 	}
-	chr.setIncomingSequence(seq + 1)
+	chr.setIngressSequence(seq + 1)
 
 	switch ty {
 	case PacketType:
@@ -79,7 +79,7 @@ func receivePacket(h ReceiveHandler, ctx sdk.Context, r channelRuntime, data Dat
 			Payload: receipt,
 		}
 
-		r.pushOutgoingQueue(newdata)
+		r.pushEgressDatagram(newdata)
 	}
 	if !res.IsOK() {
 		return WrapResult(res)

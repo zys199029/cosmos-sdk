@@ -1,5 +1,6 @@
 package ibc
 
+/*
 import (
 	"testing"
 
@@ -77,3 +78,4 @@ func TestIBCMsgs(t *testing.T) {
 	mock.CheckBalance(t, mapp, addr1, coins)
 	mock.SignCheckDeliver(t, mapp.BaseApp, []sdk.Msg{receiveMsg}, []int64{0}, []int64{2}, false, priv1)
 }
+*/

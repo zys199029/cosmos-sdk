@@ -14,7 +14,7 @@ import (
 	authctx "github.com/cosmos/cosmos-sdk/x/auth/client/context"
 	"github.com/cosmos/cosmos-sdk/x/ibc"
 
-	"github.com/cosmos/cosmos-sdk/x/ibc/bank"
+	"github.com/cosmos/cosmos-sdk/x/bank/ibc"
 )
 
 type transferBody struct {
