@@ -28,29 +28,29 @@ const (
 	FlagDestChainNode = "dest-chain-node"
 )
 
-type relayCommander struct {
-	cdc       *wire.Codec
-	address   sdk.AccAddress
-	decoder   auth.AccountDecoder
-	mainStore string
-	accStore  string
+type commander struct {
+	cdc     *wire.Codec
+	decoder auth.AccountDecoder
 
+	address       sdk.AccAddress
 	storeName     string
 	srcChainID    string
 	srcChainNode  string
 	destChainID   string
 	destChainNode string
 
+	ich chan uint64
+	ech chan uint64
+	dch chan ibc.Datagram
+
 	logger log.Logger
 }
 
 // IBCRelayCmd implements the IBC relay command.
 func IBCRelayCmd(cdc *wire.Codec) *cobra.Command {
-	cmdr := relayCommander{
-		cdc:       cdc,
-		decoder:   authcmd.GetAccountDecoder(cdc),
-		mainStore: "main",
-		accStore:  "acc",
+	cmdr := commander{
+		cdc:     cdc,
+		decoder: authcmd.GetAccountDecoder(cdc),
 
 		logger: log.NewTMLogger(log.NewSyncWriter(os.Stdout)),
 	}
@@ -81,31 +81,122 @@ func IBCRelayCmd(cdc *wire.Codec) *cobra.Command {
 	return cmd
 }
 
-// nolint: unparam
-func (c relayCommander) runIBCRelay(cmd *cobra.Command, args []string) {
-	storeName := viper.GetString(FlagStoreName)
-	srcChainID := viper.GetString(FlagSrcChainID)
-	srcChainNode := viper.GetString(FlagSrcChainNode)
-	destChainID := viper.GetString(FlagDestChainID)
-	destChainNode := viper.GetString(FlagDestChainNode)
-	address, err := context.NewCLIContext().GetFromAddress()
+func (c commander) runIBCRelay(cmd *cobra.Command, args []string) {
+	c.storeName = viper.GetString(FlagStoreName)
+	c.srcChainID = viper.GetString(FlagSrcChainID)
+	c.srcChainNode = viper.GetString(FlagSrcChainNode)
+	c.destChainID = viper.GetString(FlagDestChainID)
+	c.destChainNode = viper.GetString(FlagDestChainNode)
+
+	c.ich = make(chan uint64)
+	c.ech = make(chan uint64)
+	c.dch = make(chan ibc.Datagram)
+
+	ctx := context.NewCLIContext()
+
+	var err error
+	c.address, err = ctx.GetFromAddress()
 	if err != nil {
 		panic(err)
 	}
 
-	c.storeName = storeName
-	c.srcChainID = srcChainID
-	c.srcChainNode = srcChainNode
-	c.destChainID = destChainID
-	c.destChainNode = destChainNode
-	c.address = address
+	c.loop(func() { c.queryEgressSequence(ctx) })
+	c.loop(func() { c.queryIngressSequence(ctx) })
+	c.loop(func() { c.queryDatagram(ctx) })
+	c.loop(func() { c.txDatagram(ctx) })
 
-	// TODO: use proper config
-
-	c.loop()
 }
 
-func (c relayCommander) query(ctx context.CLIContext, path string, params interface{}, ptr interface{}) {
+func (c commander) queryEgressSequence(ctx context.CLIContext) {
+	for {
+		seq := c.egressSequence(ctx, ibc.PacketType)
+		c.ech <- seq
+		c.logger.Info("Detected new packet", "number", seq)
+	}
+}
+
+func (c commander) queryIngressSequence(ctx context.CLIContext) {
+	for {
+		seq := c.ingressSequence(ctx, ibc.PacketType)
+		c.ich <- seq
+		c.logger.Info("Detected processed packet", "number", seq)
+	}
+}
+
+func (c commander) queryDatagram(ctx context.CLIContext) {
+	ingseq := <-c.ich
+	egseq := <-c.ech
+
+	for {
+		select {
+		case newseq := <-c.ich:
+			ingseq = newseq
+		case newseq := <-c.ech:
+			egseq = newseq
+		default:
+			if egseq <= ingseq {
+				time.Sleep(5 * time.Second)
+				continue
+			}
+			for seq := ingseq; seq < egseq; seq++ {
+				data := c.egressDatagram(ctx, ingseq, ibc.PacketType)
+				c.logger.Info("Retrieved packet", "number", ingseq)
+				c.dch <- data
+			}
+			ingseq = egseq
+			time.Sleep(1 * time.Second)
+		}
+	}
+}
+
+func (c commander) txDatagram(ctx context.CLIContext) {
+	for {
+		data := <-c.dch
+		msg := ibc.MsgReceive{Datagram: data, Relayer: c.address}
+		err := c.tx(ctx, msg)
+		c.logger.Info("Submitted packet")
+		if err != nil {
+			c.logger.Info("Error transacting packet, skipping")
+		}
+	}
+}
+
+func (c commander) tx(ctx context.CLIContext, msg sdk.Msg) error {
+	authctx := authctx.NewTxContextFromCLI().WithCodec(c.cdc)
+	return utils.SendTx(authctx, ctx, []sdk.Msg{msg})
+}
+
+func (c commander) ingressSequence(ctx context.CLIContext, ty ibc.DatagramType) (res uint64) {
+	c.query(ctx, "ingress-sequence", ibc.QueryIngressSequenceParams{c.srcChainID, byte(ty)}, &res)
+	return
+}
+
+func (c commander) egressSequence(ctx context.CLIContext, ty ibc.DatagramType) (res uint64) {
+	c.query(ctx, "egress-sequence", ibc.QueryEgressSequenceParams{c.destChainID, byte(ty)}, &res)
+	return
+}
+
+func (c commander) egressDatagram(ctx context.CLIContext, index uint64, ty ibc.DatagramType) (res ibc.Datagram) {
+	c.query(ctx, "egress-datagram", ibc.QueryEgressDatagramParams{c.destChainID, byte(ty), index}, &res)
+	return
+}
+
+func (c commander) loop(f func()) {
+	go func() {
+		for {
+			func() {
+				defer func() {
+					if err := recover(); err != nil {
+						c.logger.Info("Panic!", "msg", err)
+					}
+				}()
+				f()
+			}()
+		}
+	}()
+}
+
+func (c commander) query(ctx context.CLIContext, path string, params interface{}, ptr interface{}) {
 	bz, err := c.cdc.MarshalJSON(params)
 	if err != nil {
 		panic(err)
@@ -119,50 +210,5 @@ func (c relayCommander) query(ctx context.CLIContext, path string, params interf
 	err = c.cdc.UnmarshalJSON(res, ptr)
 	if err != nil {
 		panic(err)
-	}
-}
-
-func (c relayCommander) ingressSequence(ctx context.CLIContext) (res uint64) {
-	c.query(ctx, "ingress-sequence", ibc.QueryIngressSequenceParams{c.srcChainID, byte(ibc.PacketType)}, &res)
-	return
-}
-
-func (c relayCommander) egressSequence(ctx context.CLIContext) (res uint64) {
-	c.query(ctx, "egress-sequence", ibc.QueryEgressSequenceParams{c.destChainID, byte(ibc.PacketType)}, &res)
-	return
-}
-
-func (c relayCommander) egressDatagram(ctx context.CLIContext, index uint64) (res ibc.Datagram) {
-	c.query(ctx, "egress-datagram", ibc.QueryEgressDatagramParams{c.destChainID, byte(ibc.PacketType), index}, &res)
-	return
-}
-
-// This is nolinted as someone is in the process of refactoring this to remove the goto
-// nolint: gocyclo
-func (c relayCommander) loop() {
-	authctx := authctx.NewTxContextFromCLI().WithCodec(c.cdc)
-	ctx := context.NewCLIContext()
-	for {
-		time.Sleep(5 * time.Second)
-
-		processed := c.ingressSequence(ctx)
-		sequence := c.egressSequence(ctx)
-		if sequence <= processed {
-			continue
-		}
-
-		c.logger.Info("Detected IBC packet", "number", sequence-1)
-
-		var data ibc.Datagram
-		for i := processed; i < sequence; i++ {
-			// TODO: add proof
-			msg := ibc.MsgReceive{Datagram: data, Relayer: c.address}
-			err := utils.SendTx(authctx, ctx, []sdk.Msg{msg})
-			if err != nil {
-				panic(err)
-			}
-
-			c.logger.Info("Relayed IBC packet", "number", i)
-		}
 	}
 }

@@ -12,8 +12,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/wire"
 	auth "github.com/cosmos/cosmos-sdk/x/auth/client/rest"
 	bank "github.com/cosmos/cosmos-sdk/x/bank/client/rest"
+	bankibc "github.com/cosmos/cosmos-sdk/x/bank/ibc/client/rest"
 	gov "github.com/cosmos/cosmos-sdk/x/gov/client/rest"
-	ibc "github.com/cosmos/cosmos-sdk/x/ibc/bank/client/rest"
 	slashing "github.com/cosmos/cosmos-sdk/x/slashing/client/rest"
 	stake "github.com/cosmos/cosmos-sdk/x/stake/client/rest"
 	"github.com/gorilla/mux"
@@ -89,7 +89,7 @@ func createHandler(cdc *wire.Codec) http.Handler {
 	tx.RegisterRoutes(cliCtx, r, cdc)
 	auth.RegisterRoutes(cliCtx, r, cdc, "acc")
 	bank.RegisterRoutes(cliCtx, r, cdc, kb)
-	ibc.RegisterRoutes(cliCtx, r, cdc, kb)
+	bankibc.RegisterRoutes(cliCtx, r, cdc, kb)
 	stake.RegisterRoutes(cliCtx, r, cdc, kb)
 	slashing.RegisterRoutes(cliCtx, r, cdc, kb)
 	gov.RegisterRoutes(cliCtx, r, cdc)
