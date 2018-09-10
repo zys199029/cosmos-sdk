@@ -41,6 +41,7 @@ test1 or test2, use:
 
 $ gaiacli tendermint txs --tag test1,test2 --any
 `),
+		Example: "TODO",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			tags := viper.GetStringSlice(flagTags)
 

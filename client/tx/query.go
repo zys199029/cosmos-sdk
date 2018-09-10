@@ -24,9 +24,10 @@ import (
 // QueryTxCmd implements the default command for a tx query.
 func QueryTxCmd(cdc *wire.Codec) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "tx [hash]",
-		Short: "Matches this txhash over all committed blocks",
-		Args:  cobra.ExactArgs(1),
+		Use:     "tx [hash]",
+		Short:   "Matches this txhash over all committed blocks",
+		Args:    cobra.ExactArgs(1),
+		Example: "Test",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// find the key to look up the account
 			hashHexStr := args[0]

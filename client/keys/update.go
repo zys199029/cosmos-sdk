@@ -14,10 +14,12 @@ import (
 
 func updateKeyCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "update <name>",
-		Short: "Change the password used to protect private key",
-		RunE:  runUpdateCmd,
-		Args:  cobra.ExactArgs(1),
+		Use:     "update <name>",
+		Args:    cobra.ExactArgs(1),
+		Short:   "Change the password used to protect private key",
+		Long:    "Change the password used to protect private key",
+		Example: "TODO",
+		RunE:    runUpdateCmd,
 	}
 	return cmd
 }

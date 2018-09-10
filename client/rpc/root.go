@@ -31,9 +31,12 @@ func AddCommands(cmd *cobra.Command) {
 
 func initClientCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "init",
-		Short: "Initialize light client",
-		RunE:  todoNotImplemented,
+		Use:     "init",
+		Args:    cobra.ExactArgs(0),
+		Short:   "Initialize light client",
+		Long:    "Initialize light client",
+		Example: "TODO",
+		RunE:    todoNotImplemented,
 	}
 	cmd.Flags().StringP(client.FlagChainID, "c", "", "ID of chain we connect to")
 	cmd.Flags().StringP(client.FlagNode, "n", "tcp://localhost:26657", "Node to connect to")

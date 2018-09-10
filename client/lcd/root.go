@@ -33,8 +33,11 @@ func ServeCommand(cdc *wire.Codec) *cobra.Command {
 	flagMaxOpenConnections := "max-open"
 
 	cmd := &cobra.Command{
-		Use:   "rest-server",
-		Short: "Start LCD (light-client daemon), a local REST server",
+		Use:     "rest-server",
+		Args:    cobra.ExactArgs(0),
+		Short:   "Start LCD (light-client daemon), a local REST server",
+		Long:    "Start LCD (light-client daemon), a local REST server",
+		Example: "TODO",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			listenAddr := viper.GetString(flagListenAddr)
 			handler := createHandler(cdc)

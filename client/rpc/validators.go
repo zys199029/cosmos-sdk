@@ -19,10 +19,12 @@ import (
 //ValidatorCommand returns the validator set for a given height
 func ValidatorCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "validator-set [height]",
-		Short: "Get the full tendermint validator set at given height",
-		Args:  cobra.MaximumNArgs(1),
-		RunE:  printValidators,
+		Use:     "validator-set [height]",
+		Args:    cobra.MaximumNArgs(1),
+		Short:   "Get the full tendermint validator set at given height",
+		Long:    "Get the full tendermint validator set at given height",
+		Example: "TODO",
+		RunE:    printValidators,
 	}
 	cmd.Flags().StringP(client.FlagNode, "n", "tcp://localhost:26657", "Node to connect to")
 	// TODO: change this to false when we can

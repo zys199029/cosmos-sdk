@@ -14,10 +14,12 @@ import (
 
 func deleteKeyCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "delete <name>",
-		Short: "Delete the given key",
-		RunE:  runDeleteCmd,
-		Args:  cobra.ExactArgs(1),
+		Use:     "delete <name>",
+		Args:    cobra.ExactArgs(1),
+		Short:   "Delete the given key",
+		Long:    "Delete the given key",
+		Example: "gaicli keys delete mykey",
+		RunE:    runDeleteCmd,
 	}
 	return cmd
 }
