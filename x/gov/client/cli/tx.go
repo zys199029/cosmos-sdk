@@ -236,7 +236,7 @@ func GetCmdVote(cdc *wire.Codec) *cobra.Command {
 				return utils.PrintUnsignedStdTx(txBldr, cliCtx, []sdk.Msg{msg})
 			}
 
-			fmt.Printf("Vote[Voter:%s,ProposalID:%d,Option:%s]",
+			fmt.Fprintf(os.Stderr, "Vote[Voter:%s,ProposalID:%d,Option:%s]",
 				voterAddr.String(), msg.ProposalID, msg.Option.String(),
 			)
 

@@ -140,7 +140,7 @@ func testnetWithConfig(config *cfg.Config, cdc *wire.Codec, appInit AppInit) err
 		}
 	}
 
-	fmt.Printf("Successfully initialized %v node directories\n", viper.GetInt(nValidators))
+	fmt.Fprintf(os.Stderr, "Successfully initialized %v node directories\n", viper.GetInt(nValidators))
 	return nil
 }
 

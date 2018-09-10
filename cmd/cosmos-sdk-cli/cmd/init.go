@@ -156,6 +156,6 @@ func setupBasecoinWorkspace(projectName string, remoteProjectPath string) error 
 	copyBasecoinTemplate(projectName, projectPath, remoteProjectPath)
 	createGopkg(projectPath)
 	createMakefile(projectPath)
-	fmt.Printf("Initialized a new project at %s.\nHappy hacking!\n", projectPath)
+	fmt.Fprintf(os.Stderr, "Initialized a new project at %s.\nHappy hacking!\n", projectPath)
 	return nil
 }
