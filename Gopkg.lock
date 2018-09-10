@@ -498,12 +498,12 @@
   version = "v0.9.0"
 
 [[projects]]
+  branch = "master"
   digest = "1:7886f86064faff6f8d08a3eb0e8c773648ff5a2e27730831e2bfbf07467f6666"
   name = "github.com/zondax/ledger-goclient"
   packages = ["."]
   pruneopts = "UT"
   revision = "58598458c11bc0ad1c1b8dac3dc3e11eaf270b79"
-  version = "v0.1.0"
 
 [[projects]]
   branch = "master"
@@ -546,7 +546,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:86171d21d59449dcf7cee0b7d2da83dff989dab9b9b69bfe0a3d59c3c1ca6081"
+  digest = "1:ead82e3e398388679f3ad77633a087ac31a47a6be59ae20841e1d1b3a3fbbd22"
   name = "golang.org/x/sys"
   packages = [
     "cpu",
