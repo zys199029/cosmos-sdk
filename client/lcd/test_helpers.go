@@ -79,17 +79,24 @@ func GetConfig() *tmcfg.Config {
 	return config
 }
 
+// InitHomeDir creates the home directory if hasn't yet been created and set viper's respective HomeFlag.
+func InitHomeDir(t *testing.T) (string, func()) {
+	dir, err := ioutil.TempDir("", "lcd_test")
+	require.NoError(t, err)
+	viper.Set(cli.HomeFlag, dir)
+	return dir, func() {
+		viper.Set(cli.HomeFlag, "")
+		os.RemoveAll(dir)
+	}
+}
+
 // GetKeyBase returns the LCD test keybase. It also requires that a directory
 // could be made and a keybase could be fetched.
 //
 // NOTE: memDB cannot be used because the request is expecting to interact with
 // the default location.
 func GetKeyBase(t *testing.T) crkeys.Keybase {
-	dir, err := ioutil.TempDir("", "lcd_test")
-	require.NoError(t, err)
-
-	viper.Set(cli.HomeFlag, dir)
-
+	require.NotEmpty(t, viper.GetString(cli.HomeFlag))
 	keybase, err := keys.GetKeyBase()
 	require.NoError(t, err)
 
@@ -116,6 +123,7 @@ func CreateAddr(t *testing.T, name, password string, kb crkeys.Keybase) (sdk.Acc
 // and initAddrs are the accounts to initialize with some steak tokens. It
 // returns a cleanup function, a set of validator public keys, and a port.
 func InitializeTestLCD(t *testing.T, nValidators int, initAddrs []sdk.AccAddress) (func(), []crypto.PubKey, string) {
+	require.NotEmpty(t, viper.GetString(cli.HomeFlag))
 	config := GetConfig()
 	config.Consensus.TimeoutCommit = 100
 	config.Consensus.SkipTimeoutCommit = false

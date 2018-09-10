@@ -38,10 +38,12 @@ func init() {
 }
 
 func TestKeys(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	name, password := "test", "1234567890"
 	addr, seed := CreateAddr(t, "test", password, GetKeyBase(t))
 	cleanup, _, port := InitializeTestLCD(t, 1, []sdk.AccAddress{addr})
 	defer cleanup()
+	defer homedirCleanup()
 
 	// get seed
 	// TODO Do we really need this endpoint?
@@ -118,8 +120,10 @@ func TestKeys(t *testing.T) {
 }
 
 func TestVersion(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	cleanup, _, port := InitializeTestLCD(t, 1, []sdk.AccAddress{})
 	defer cleanup()
+	defer homedirCleanup()
 
 	// node info
 	res, body := Request(t, port, "GET", "/version", nil)
@@ -141,8 +145,10 @@ func TestVersion(t *testing.T) {
 }
 
 func TestNodeStatus(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	cleanup, _, port := InitializeTestLCD(t, 1, []sdk.AccAddress{})
 	defer cleanup()
+	defer homedirCleanup()
 
 	// node info
 	res, body := Request(t, port, "GET", "/node_info", nil)
@@ -163,8 +169,10 @@ func TestNodeStatus(t *testing.T) {
 }
 
 func TestBlock(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	cleanup, _, port := InitializeTestLCD(t, 1, []sdk.AccAddress{})
 	defer cleanup()
+	defer homedirCleanup()
 
 	var resultBlock ctypes.ResultBlock
 
@@ -193,8 +201,10 @@ func TestBlock(t *testing.T) {
 }
 
 func TestValidators(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	cleanup, _, port := InitializeTestLCD(t, 1, []sdk.AccAddress{})
 	defer cleanup()
+	defer homedirCleanup()
 
 	var resultVals rpc.ResultValidatorsOutput
 
@@ -226,10 +236,12 @@ func TestValidators(t *testing.T) {
 }
 
 func TestCoinSend(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	name, password := "test", "1234567890"
 	addr, seed := CreateAddr(t, "test", password, GetKeyBase(t))
 	cleanup, _, port := InitializeTestLCD(t, 1, []sdk.AccAddress{addr})
 	defer cleanup()
+	defer homedirCleanup()
 
 	bz, err := hex.DecodeString("8FA6AB57AD6870F6B5B2E57735F38F2F30E73CB6")
 	require.NoError(t, err)
@@ -287,9 +299,11 @@ func TestCoinSend(t *testing.T) {
 
 func TestIBCTransfer(t *testing.T) {
 	name, password := "test", "1234567890"
+	_, homedirCleanup := InitHomeDir(t)
 	addr, seed := CreateAddr(t, "test", password, GetKeyBase(t))
 	cleanup, _, port := InitializeTestLCD(t, 1, []sdk.AccAddress{addr})
 	defer cleanup()
+	defer homedirCleanup()
 
 	acc := getAccount(t, port, addr)
 	initialBalance := acc.GetCoins()
@@ -315,10 +329,12 @@ func TestIBCTransfer(t *testing.T) {
 }
 
 func TestCoinSendGenerateAndSign(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	name, password := "test", "1234567890"
 	addr, seed := CreateAddr(t, "test", password, GetKeyBase(t))
 	cleanup, _, port := InitializeTestLCD(t, 1, []sdk.AccAddress{addr})
 	defer cleanup()
+	defer homedirCleanup()
 
 	// generate TX
 	res, body, _ := doSendWithGas(t, port, seed, name, password, addr, 0, 0, "?generate_only=true")
@@ -356,10 +372,12 @@ func TestCoinSendGenerateAndSign(t *testing.T) {
 }
 
 func TestTxs(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	name, password := "test", "1234567890"
 	addr, seed := CreateAddr(t, "test", password, GetKeyBase(t))
 	cleanup, _, port := InitializeTestLCD(t, 1, []sdk.AccAddress{addr})
 	defer cleanup()
+	defer homedirCleanup()
 
 	// query wrong
 	res, body := Request(t, port, "GET", "/txs", nil)
@@ -415,10 +433,12 @@ func TestTxs(t *testing.T) {
 }
 
 func TestPoolParamsQuery(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	_, password := "test", "1234567890"
 	addr, _ := CreateAddr(t, "test", password, GetKeyBase(t))
 	cleanup, _, port := InitializeTestLCD(t, 1, []sdk.AccAddress{addr})
 	defer cleanup()
+	defer homedirCleanup()
 
 	defaultParams := stake.DefaultParams()
 
@@ -451,8 +471,10 @@ func TestPoolParamsQuery(t *testing.T) {
 }
 
 func TestValidatorsQuery(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	cleanup, pks, port := InitializeTestLCD(t, 1, []sdk.AccAddress{})
 	defer cleanup()
+	defer homedirCleanup()
 	require.Equal(t, 1, len(pks))
 
 	validators := getValidators(t, port)
@@ -468,8 +490,10 @@ func TestValidatorsQuery(t *testing.T) {
 }
 
 func TestValidatorQuery(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	cleanup, pks, port := InitializeTestLCD(t, 1, []sdk.AccAddress{})
 	defer cleanup()
+	defer homedirCleanup()
 	require.Equal(t, 1, len(pks))
 
 	validator1Operator := sdk.ValAddress(pks[0].Address())
@@ -478,10 +502,12 @@ func TestValidatorQuery(t *testing.T) {
 }
 
 func TestBonding(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	name, password, denom := "test", "1234567890", "steak"
 	addr, seed := CreateAddr(t, name, password, GetKeyBase(t))
 	cleanup, pks, port := InitializeTestLCD(t, 1, []sdk.AccAddress{addr})
 	defer cleanup()
+	defer homedirCleanup()
 
 	validator1Operator := sdk.ValAddress(pks[0].Address())
 	validator := getValidator(t, port, validator1Operator)
@@ -563,10 +589,12 @@ func TestBonding(t *testing.T) {
 }
 
 func TestSubmitProposal(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	name, password := "test", "1234567890"
 	addr, seed := CreateAddr(t, "test", password, GetKeyBase(t))
 	cleanup, _, port := InitializeTestLCD(t, 1, []sdk.AccAddress{addr})
 	defer cleanup()
+	defer homedirCleanup()
 
 	// create SubmitProposal TX
 	resultTx := doSubmitProposal(t, port, seed, name, password, addr)
@@ -585,10 +613,12 @@ func TestSubmitProposal(t *testing.T) {
 }
 
 func TestDeposit(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	name, password := "test", "1234567890"
 	addr, seed := CreateAddr(t, "test", password, GetKeyBase(t))
 	cleanup, _, port := InitializeTestLCD(t, 1, []sdk.AccAddress{addr})
 	defer cleanup()
+	defer homedirCleanup()
 
 	// create SubmitProposal TX
 	resultTx := doSubmitProposal(t, port, seed, name, password, addr)
@@ -619,10 +649,12 @@ func TestDeposit(t *testing.T) {
 }
 
 func TestVote(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	name, password := "test", "1234567890"
 	addr, seed := CreateAddr(t, "test", password, GetKeyBase(t))
 	cleanup, _, port := InitializeTestLCD(t, 1, []sdk.AccAddress{addr})
 	defer cleanup()
+	defer homedirCleanup()
 
 	// create SubmitProposal TX
 	resultTx := doSubmitProposal(t, port, seed, name, password, addr)
@@ -657,10 +689,12 @@ func TestVote(t *testing.T) {
 }
 
 func TestUnjail(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	_, password := "test", "1234567890"
 	addr, _ := CreateAddr(t, "test", password, GetKeyBase(t))
 	cleanup, pks, port := InitializeTestLCD(t, 1, []sdk.AccAddress{addr})
 	defer cleanup()
+	defer homedirCleanup()
 
 	// XXX: any less than this and it fails
 	tests.WaitForHeight(3, port)
@@ -673,12 +707,14 @@ func TestUnjail(t *testing.T) {
 }
 
 func TestProposalsQuery(t *testing.T) {
+	_, homedirCleanup := InitHomeDir(t)
 	name, password1 := "test", "1234567890"
 	name2, password2 := "test2", "1234567890"
 	addr, seed := CreateAddr(t, "test", password1, GetKeyBase(t))
 	addr2, seed2 := CreateAddr(t, "test2", password2, GetKeyBase(t))
 	cleanup, _, port := InitializeTestLCD(t, 1, []sdk.AccAddress{addr, addr2})
 	defer cleanup()
+	defer homedirCleanup()
 
 	// Addr1 proposes (and deposits) proposals #1 and #2
 	resultTx := doSubmitProposal(t, port, seed, name, password1, addr)
