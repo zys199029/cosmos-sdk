@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
+	str "github.com/cosmos/cosmos-sdk/store"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
@@ -52,11 +53,16 @@ func (k Keeper) getValidatorSlashingPeriodForHeight(ctx sdk.Context, address sdk
 		itr.Next()
 	}
 	// END TODO
-	iterator := store.ReverseIterator(start, end)
-	if !iterator.Valid() {
+	//iterator := store.ReverseIterator(start, end)
+	//if !iterator.Valid() {
+	//panic(fmt.Sprintf("expected to find slashing period for validator %s before height %d, but none was found", address, height))
+	//}
+	//slashingPeriod = k.unmarshalSlashingPeriodKeyValue(iterator.Key(), iterator.Value())
+	kv, ok := str.Last(store, start, end)
+	if !ok {
 		panic(fmt.Sprintf("expected to find slashing period for validator %s before height %d, but none was found", address, height))
 	}
-	slashingPeriod = k.unmarshalSlashingPeriodKeyValue(iterator.Key(), iterator.Value())
+	slashingPeriod = k.unmarshalSlashingPeriodKeyValue(kv.Key, kv.Value)
 	return
 }
 
