@@ -26,3 +26,12 @@ func SetPruning(pruning string) func(*BaseApp) {
 		bap.cms.SetPruning(pruningEnum)
 	}
 }
+
+// SetMinimumFees returns an option that sets the minimum fees on the app.
+func SetMinimumFees(minFees string) func(*BaseApp) {
+	fees, err := sdk.ParseCoins(minFees)
+	if err != nil {
+		panic(fmt.Sprintf("Invalid minimum fees: %v", err))
+	}
+	return func(bap *BaseApp) { bap.SetMinimumFees(fees) }
+}

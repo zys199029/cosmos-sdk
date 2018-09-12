@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/cosmos/cosmos-sdk/client"
+	"github.com/cosmos/cosmos-sdk/server/config"
 	"github.com/cosmos/cosmos-sdk/version"
 	"github.com/cosmos/cosmos-sdk/wire"
 	tcmd "github.com/tendermint/tendermint/cmd/tendermint/commands"
@@ -97,6 +98,20 @@ func interceptLoadConfig() (conf *cfg.Config, err error) {
 	if conf == nil {
 		conf, err = tcmd.ParseConfig()
 	}
+
+	cosmosConfigFilePath := filepath.Join(rootDir, "config/cosmos.toml")
+	viper.SetConfigName("cosmos")
+	_ = viper.MergeInConfig()
+	var cosmosConf *config.Config
+	if _, err := os.Stat(cosmosConfigFilePath); os.IsNotExist(err) {
+		cosmosConf, _ := config.ParseConfig()
+		config.WriteConfigFile(cosmosConfigFilePath, cosmosConf)
+	}
+
+	if cosmosConf == nil {
+		_, err = config.ParseConfig()
+	}
+
 	return
 }
 

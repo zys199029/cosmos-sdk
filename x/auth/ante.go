@@ -95,8 +95,10 @@ func NewAnteHandler(am AccountMapper, fck FeeCollectionKeeper) sdk.AnteHandler {
 			}
 
 			// first sig pays the fees
-			// TODO: Add min fees
 			// Can this function be moved outside of the loop?
+			if ctx.IsCheckTx() && !simulate && ctx.MinimumFees().Minus(fee.Amount).IsPositive() {
+				fee = NewStdFee(fee.Gas, ctx.MinimumFees()...)
+			}
 			if i == 0 && !fee.Amount.IsZero() {
 				newCtx.GasMeter().ConsumeGas(deductFeesCost, "deductFees")
 				signerAcc, res = deductFees(signerAcc, fee)

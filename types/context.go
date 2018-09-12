@@ -41,10 +41,12 @@ func NewContext(ms MultiStore, header abci.Header, isCheckTx bool, logger log.Lo
 	c = c.WithBlockHeader(header)
 	c = c.WithBlockHeight(header.Height)
 	c = c.WithChainID(header.ChainID)
+	c = c.WithIsCheckTx(isCheckTx)
 	c = c.WithTxBytes(nil)
 	c = c.WithLogger(logger)
 	c = c.WithSigningValidators(nil)
 	c = c.WithGasMeter(NewInfiniteGasMeter())
+	c = c.WithMinimumFees(Coins{})
 	return c
 }
 
@@ -132,10 +134,12 @@ const (
 	contextKeyBlockHeight
 	contextKeyConsensusParams
 	contextKeyChainID
+	contextKeyIsCheckTx
 	contextKeyTxBytes
 	contextKeyLogger
 	contextKeySigningValidators
 	contextKeyGasMeter
+	contextKeyMinimumFees
 )
 
 // NOTE: Do not expose MultiStore.
@@ -170,6 +174,12 @@ func (c Context) SigningValidators() []abci.SigningValidator {
 func (c Context) GasMeter() GasMeter {
 	return c.Value(contextKeyGasMeter).(GasMeter)
 }
+func (c Context) IsCheckTx() bool {
+	return c.Value(contextKeyIsCheckTx).(bool)
+}
+func (c Context) MinimumFees() Coins {
+	return c.Value(contextKeyMinimumFees).(Coins)
+}
 func (c Context) WithMultiStore(ms MultiStore) Context {
 	return c.withValue(contextKeyMultiStore, ms)
 }
@@ -201,6 +211,12 @@ func (c Context) WithSigningValidators(SigningValidators []abci.SigningValidator
 }
 func (c Context) WithGasMeter(meter GasMeter) Context {
 	return c.withValue(contextKeyGasMeter, meter)
+}
+func (c Context) WithIsCheckTx(isCheckTx bool) Context {
+	return c.withValue(contextKeyIsCheckTx, isCheckTx)
+}
+func (c Context) WithMinimumFees(minFees Coins) Context {
+	return c.withValue(contextKeyMinimumFees, minFees)
 }
 
 // Cache the multistore and return a new cached context. The cached context is
